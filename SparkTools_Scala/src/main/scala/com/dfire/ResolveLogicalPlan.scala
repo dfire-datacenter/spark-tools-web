@@ -4,11 +4,12 @@ import java.util
 
 import com.dfire.command._
 import org.apache.spark.Dependency
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.internal
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{HiveTableRelation, UnresolvedCatalogRelation}
 import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.util.Logging
 
 import scala.collection.JavaConversions._
 
