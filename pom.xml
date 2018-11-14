@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.dfire</groupId>
+    <artifactId>spark-tools-web</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+
+    <parent>
+        <groupId>com.dfire.spring.boot</groupId>
+        <artifactId>spring-boot-parent</artifactId>
+        <version>1.5.11-3.RELEASE-PURE</version>
+    </parent>
+
+    <properties>
+        <jdk.version>1.8</jdk.version>
+        <common-tools.version>1.0.4</common-tools.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <modules>
+        <module>SparkTools</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>${mybatis-spring-boot-starter.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- 简化get set log-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.18</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twodfire</groupId>
+            <artifactId>dfire-result</artifactId>
+            <version>1.0.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.dfire.datacenter</groupId>
+            <artifactId>common-tools</artifactId>
+            <version>${common-tools.version}</version>
+        </dependency>
+    </dependencies>
+
+
+    <!--配置信息-->
+    <profiles>
+        <!--项目环境-->
+        <profile>
+            <id>dev</id>
+            <properties>
+                <env>dev</env>
+                <maven.skip.test>false</maven.skip.test>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <!-- 日常环境，默认激活 mvn package -P daily -->
+        <profile>
+            <id>daily</id>
+            <properties>
+                <env>daily</env>
+                <maven.skip.test>false</maven.skip.test>
+            </properties>
+        </profile>
+
+        <!-- 预发环境 -->
+        <profile>
+            <id>pre</id>
+            <properties>
+                <env>pre</env>
+                <maven.skip.test>true</maven.skip.test>
+            </properties>
+        </profile>
+
+        <!--发布环境-->
+        <profile>
+            <id>publish</id>
+            <properties>
+                <env>publish</env>
+                <maven.skip.test>true</maven.skip.test>
+            </properties>
+        </profile>
+    </profiles>
+
+    <repositories>
+        <repository>
+            <id>releases</id>
+            <url>http://nexus.2dfire-dev.com/content/repositories/releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>releases</id>
+            <url>http://nexus.2dfire-dev.com/content/repositories/releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <url>http://nexus.2dfire-dev.com/content/repositories/releases</url>
+            <uniqueVersion>true</uniqueVersion>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>http://nexus.2dfire-dev.com/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>

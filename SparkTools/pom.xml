@@ -198,7 +198,7 @@
 
     <!-- 打包编译 -->
     <build>
-        <finalName>SparkTools-publish</finalName>
+        <finalName>SparkTools</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
