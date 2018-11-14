@@ -17,12 +17,12 @@
 
 package org.apache.spark.sql
 
-import scala.collection.JavaConverters._
-import scala.util.hashing.MurmurHash3
-
 import org.apache.spark.annotation.InterfaceStability
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
+
+import scala.collection.JavaConverters._
+import scala.util.hashing.MurmurHash3
 
 /**
  * @since 1.3.0

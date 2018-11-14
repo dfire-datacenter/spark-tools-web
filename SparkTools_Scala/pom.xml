@@ -95,6 +95,7 @@
     <!-- 打包编译 -->
     <build>
         <finalName>SparkTools_Scala</finalName>
+        <sourceDirectory>src/main/scala</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
