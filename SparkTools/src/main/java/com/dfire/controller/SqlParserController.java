@@ -1,14 +1,12 @@
 package com.dfire.controller;
 
 import com.dfire.ResolveLogicalPlan;
-import com.twodfire.share.result.Result;
-import com.twodfire.share.result.ResultSupport;
+import com.dfire.entity.SparkPlanResultEntity;
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.internal.SQLConf;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import scala.Tuple2;
 
@@ -28,39 +26,37 @@ public class SqlParserController {
     // http://127.0.0.1:8089/spark/sql/parser
 
     @RequestMapping("/parser")
-    public Result getToken(@RequestBody String sql) {
-        Result result = new ResultSupport(false);
+    public SparkPlanResultEntity getToken(@RequestBody String sql) {
         SQLConf sqlConf = new SQLConf();
         CatalystSqlParser catalystSqlParser = new CatalystSqlParser(sqlConf);
         ResolveLogicalPlan resolveLogicalPlan = new ResolveLogicalPlan();
+        String inputTables = "";
+        String outputTables = "";
         try {
             LogicalPlan logicalPlan = catalystSqlParser.parsePlan(sql);
             Tuple2<Set<ResolveLogicalPlan.DcTable>, Set<ResolveLogicalPlan.DcTable>> rlp = resolveLogicalPlan.resolvePlan(logicalPlan, "default");
             Set<ResolveLogicalPlan.DcTable> inputTableSet = rlp._1;
             Set<ResolveLogicalPlan.DcTable> outputTableSet = rlp._2;
-            String input = "";
-            String output = "";
             for (Iterator it = inputTableSet.iterator(); it.hasNext(); ) {
-                if (!"".equals(input)) {
-                    input += ";";
+                if (!"".equals(inputTables)) {
+                    inputTables += ";";
                 }
-                input += it.next().toString();
+                inputTables += it.next().toString();
             }
             for (Iterator it = outputTableSet.iterator(); it.hasNext(); ) {
-                if (!"".equals(output)) {
-                    output += ";";
+                if (!"".equals(outputTables)) {
+                    outputTables += ";";
                 }
-                output += it.next().toString();
+                outputTables += it.next().toString();
             }
-            System.out.println(input);
-            System.out.println(output);
+            System.out.println(inputTables);
+            System.out.println(outputTables);
             System.out.println(logicalPlan.toString());
-            result.setMessage(input + "&&" + output);
-            result.setSuccess(true);
         } catch (Exception e) {
-            result.setSuccess(false);
+            return new SparkPlanResultEntity(false, null, null, e.toString());
         }
-        return result;
+        return new SparkPlanResultEntity(true, inputTables, outputTables, "");
+
     }
 
 }

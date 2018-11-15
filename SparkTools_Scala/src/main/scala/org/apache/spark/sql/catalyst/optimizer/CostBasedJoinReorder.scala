@@ -19,7 +19,7 @@ package org.apache.spark.sql.catalyst.optimizer
 
 import scala.collection.mutable
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeSet, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.plans.{Inner, InnerLike, JoinType}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, Project}

@@ -21,7 +21,7 @@ import java.net.URL
 
 import org.apache.hadoop.fs.FsUrlStreamHandlerFactory
 import org.apache.spark.SparkContext
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 
 private[dfire] class SharedState(val sparkContext: SparkContext) extends Logging {
 

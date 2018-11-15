@@ -34,7 +34,7 @@ import org.codehaus.janino.util.ClassFile
 
 import org.apache.spark.{SparkEnv, TaskContext, TaskKilledException}
 import org.apache.spark.executor.InputMetrics
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._

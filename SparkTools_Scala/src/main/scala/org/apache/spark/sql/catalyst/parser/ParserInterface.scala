@@ -22,13 +22,11 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.types.{DataType, StructType}
-import org.springframework.stereotype.Service
 
 /**
   * Interface for a parser.
   */
 @DeveloperApi
-@Service
 trait ParserInterface {
 
   /**

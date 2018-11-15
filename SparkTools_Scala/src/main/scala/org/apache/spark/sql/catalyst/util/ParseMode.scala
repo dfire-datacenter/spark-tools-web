@@ -19,7 +19,7 @@ package org.apache.spark.sql.catalyst.util
 
 import java.util.Locale
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 
 sealed trait ParseMode {
   /**

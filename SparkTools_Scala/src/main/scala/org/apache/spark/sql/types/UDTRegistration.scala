@@ -20,7 +20,7 @@ package org.apache.spark.sql.types
 import scala.collection.mutable
 
 import org.apache.spark.SparkException
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 import org.apache.spark.util.Utils
 
 /**

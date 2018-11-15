@@ -19,7 +19,7 @@ package org.apache.spark.sql.catalyst.analysis
 
 import javax.annotation.Nullable
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.plans.logical._

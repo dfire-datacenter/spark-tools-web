@@ -146,7 +146,7 @@ trait Logging {
   }
 }
 
-private[spark] object Logging {
+object Logging {
   @volatile private var initialized = false
   @volatile private var defaultRootLevel: Level = null
   @volatile private var defaultSparkLog4jConfig = false

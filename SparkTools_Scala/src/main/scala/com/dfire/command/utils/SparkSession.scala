@@ -2,10 +2,9 @@ package com.dfire.command.utils
 
 import java.io.Closeable
 
-import com.sun.deploy.util.SessionState
 import org.apache.spark.SparkContext
 import org.apache.spark.annotation.InterfaceStability
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 
 
 /**

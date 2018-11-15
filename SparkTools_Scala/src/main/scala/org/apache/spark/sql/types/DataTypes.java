@@ -18,7 +18,6 @@
 package org.apache.spark.sql.types;
 
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.spark.sql.types.*;
 
 import java.util.HashSet;
 import java.util.List;

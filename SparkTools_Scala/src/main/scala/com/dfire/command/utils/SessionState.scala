@@ -20,7 +20,7 @@ package com.dfire.command.utils
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.internal.SQLConf
 
-private[dfire] object SessionState {
+class SessionState {
   def newHadoopConf(hadoopConf: Configuration, sqlConf: SQLConf): Configuration = {
     val newHadoopConf = new Configuration(hadoopConf)
     sqlConf.getAllConfs.foreach { case (k, v) => if (v ne null) newHadoopConf.set(k, v) }

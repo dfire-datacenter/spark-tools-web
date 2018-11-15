@@ -24,7 +24,7 @@ import scala.util.control.NonFatal
 
 import net.jpountz.lz4.{LZ4BlockInputStream, LZ4BlockOutputStream}
 
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._

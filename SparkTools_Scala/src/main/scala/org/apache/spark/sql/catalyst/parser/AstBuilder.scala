@@ -25,7 +25,7 @@ import antlr4.org.apache.spark.sql.catalyst.parser.SqlBaseParser._
 import antlr4.org.apache.spark.sql.catalyst.parser.{SqlBaseBaseVisitor, SqlBaseParser}
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode, TerminalNode}
 import org.antlr.v4.runtime.{ParserRuleContext, Token}
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat

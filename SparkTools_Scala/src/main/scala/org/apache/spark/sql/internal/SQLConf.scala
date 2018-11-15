@@ -28,7 +28,7 @@ import scala.util.matching.Regex
 import org.apache.hadoop.fs.Path
 
 import org.apache.spark.{SparkContext, SparkEnv}
-import org.apache.spark.internal.Logging
+import org.apache.spark.sql.util.Logging
 import org.apache.spark.internal.config._
 import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.sql.catalyst.analysis.Resolver
