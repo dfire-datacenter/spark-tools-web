@@ -15,6 +15,11 @@
         <druid-spring-boot.version>1.1.10</druid-spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <scala.binary.version>2.11</scala.binary.version>
+        <common-validator>1.2.9</common-validator>
+        <flame-client.version>1.0.4</flame-client.version>
+        <spring-beans.version>4.3.2.RELEASE</spring-beans.version>
+        <dfire-spring-boot.version>1.5.0</dfire-spring-boot.version>
+        <aspectj.version>1.8.13</aspectj.version>
     </properties>
     <dependencies>
         <dependency>
@@ -22,103 +27,186 @@
             <artifactId>SparkTools_Scala</artifactId>
             <version>1.0.0</version>
         </dependency>
-        <!--spring boot 框架-->
+
+        <!--spring-boot-->
+        <dependency>
+            <groupId>com.2dfire.spring.boot</groupId>
+            <artifactId>spring-boot-autoconfigure-monitor</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <version>${spring-boot.version}</version>
         </dependency>
+
+
+        <!-- http://k.2dfire.net/pages/viewpage.action?pageId=387121269 -->
+        <!-- http://git.2dfire-inc.com/middleware/common-validator/tree/master -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot</artifactId>
-            <version>${spring-boot.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-            <version>${spring-boot.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <version>${spring-boot.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
-            <version>${spring-boot.version}</version>
+            <groupId>com.dfire.middleware</groupId>
+            <artifactId>common-validator</artifactId>
+            <version>${common-validator}</version>
         </dependency>
 
-        <!--fastJson-->
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.47</version>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>${aspectj.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.8.5</version>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring-beans.version}</version>
         </dependency>
-        <!-- 简化get set log-->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.16.18</version>
-        </dependency>
-        <!--<dependency>-->
-        <!--<groupId>com.dfire</groupId>-->
-        <!--<artifactId>transfer</artifactId>-->
-        <!--<version>2.0.0</version>-->
-        <!--</dependency>-->
 
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty</artifactId>
-            <version>3.7.0.Final</version>
+            <groupId>com.dfire.soa</groupId>
+            <artifactId>flame-client</artifactId>
+            <version>${flame-client.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.42</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>4.4.1</version>
-        </dependency>
-        <!--<dependency>-->
-        <!--<groupId>com.alibaba</groupId>-->
-        <!--<artifactId>druid-spring-boot-starter</artifactId>-->
-        <!--<version>${druid-spring-boot.version}</version>-->
-        <!--<exclusions>-->
-        <!--<exclusion>-->
-        <!--<groupId>com.dfire.spring.boot</groupId>-->
-        <!--<artifactId>dfire-dubbo-spring-boot-starter</artifactId>-->
-        <!--</exclusion>-->
-        <!--</exclusions>-->
-        <!--</dependency>-->
+
         <dependency>
             <groupId>com.twodfire</groupId>
             <artifactId>dfire-result</artifactId>
             <version>1.0.4</version>
         </dependency>
+
         <dependency>
             <groupId>com.dfire.datacenter</groupId>
             <artifactId>common-tools</artifactId>
             <version>${common-tools.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>RELEASE</version>
+            <groupId>com.twodfire</groupId>
+            <artifactId>twodfire-asyncmsg</artifactId>
+            <version>1.3.2</version>
         </dependency>
+
+        <!--   增加 日志配置 -->
+        <dependency>
+            <groupId>com.dfire.logback</groupId>
+            <artifactId>logback-kafka</artifactId>
+            <version>0.0.4</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.18</version>
+        </dependency>
+
+        <!--&lt;!&ndash;spring boot 框架&ndash;&gt;-->
+        <!--<dependency>-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot-starter-web</artifactId>-->
+        <!--<version>${spring-boot.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot</artifactId>-->
+        <!--<version>${spring-boot.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot-starter-actuator</artifactId>-->
+        <!--<version>${spring-boot.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot-configuration-processor</artifactId>-->
+        <!--<version>${spring-boot.version}</version>-->
+        <!--<optional>true</optional>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot-starter-aop</artifactId>-->
+        <!--<version>${spring-boot.version}</version>-->
+        <!--</dependency>-->
+
+        <!--&lt;!&ndash;fastJson&ndash;&gt;-->
+        <!--<dependency>-->
+        <!--<groupId>com.alibaba</groupId>-->
+        <!--<artifactId>fastjson</artifactId>-->
+        <!--<version>1.2.47</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>com.google.code.gson</groupId>-->
+        <!--<artifactId>gson</artifactId>-->
+        <!--<version>2.8.5</version>-->
+        <!--</dependency>-->
+        <!--&lt;!&ndash; 简化get set log&ndash;&gt;-->
+        <!--<dependency>-->
+        <!--<groupId>org.projectlombok</groupId>-->
+        <!--<artifactId>lombok</artifactId>-->
+        <!--<version>1.16.18</version>-->
+        <!--</dependency>-->
+        <!--&lt;!&ndash;<dependency>&ndash;&gt;-->
+        <!--&lt;!&ndash;<groupId>com.dfire</groupId>&ndash;&gt;-->
+        <!--&lt;!&ndash;<artifactId>transfer</artifactId>&ndash;&gt;-->
+        <!--&lt;!&ndash;<version>2.0.0</version>&ndash;&gt;-->
+        <!--&lt;!&ndash;</dependency>&ndash;&gt;-->
+
+        <!--<dependency>-->
+        <!--<groupId>io.netty</groupId>-->
+        <!--<artifactId>netty</artifactId>-->
+        <!--<version>3.7.0.Final</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>com.alibaba</groupId>-->
+        <!--<artifactId>fastjson</artifactId>-->
+        <!--<version>1.2.42</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.apache.httpcomponents</groupId>-->
+        <!--<artifactId>httpclient</artifactId>-->
+        <!--<version>4.4.1</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.apache.httpcomponents</groupId>-->
+        <!--<artifactId>httpcore</artifactId>-->
+        <!--<version>4.4.1</version>-->
+        <!--</dependency>-->
+        <!--&lt;!&ndash;<dependency>&ndash;&gt;-->
+        <!--&lt;!&ndash;<groupId>com.alibaba</groupId>&ndash;&gt;-->
+        <!--&lt;!&ndash;<artifactId>druid-spring-boot-starter</artifactId>&ndash;&gt;-->
+        <!--&lt;!&ndash;<version>${druid-spring-boot.version}</version>&ndash;&gt;-->
+        <!--&lt;!&ndash;<exclusions>&ndash;&gt;-->
+        <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+        <!--&lt;!&ndash;<groupId>com.dfire.spring.boot</groupId>&ndash;&gt;-->
+        <!--&lt;!&ndash;<artifactId>dfire-dubbo-spring-boot-starter</artifactId>&ndash;&gt;-->
+        <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+        <!--&lt;!&ndash;</exclusions>&ndash;&gt;-->
+        <!--&lt;!&ndash;</dependency>&ndash;&gt;-->
+        <!--<dependency>-->
+        <!--<groupId>com.twodfire</groupId>-->
+        <!--<artifactId>dfire-result</artifactId>-->
+        <!--<version>1.0.4</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>com.dfire.datacenter</groupId>-->
+        <!--<artifactId>common-tools</artifactId>-->
+        <!--<version>${common-tools.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>junit</groupId>-->
+        <!--<artifactId>junit</artifactId>-->
+        <!--<version>RELEASE</version>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -232,11 +320,6 @@
             <artifactId>commons-codec</artifactId>
             <version>1.10</version>
         </dependency>
-        <dependency>
-            <groupId>com.2dfire.spring.boot</groupId>
-            <artifactId>spring-boot-autoconfigure-monitor</artifactId>
-            <version>1.1.2</version>
-        </dependency>
     </dependencies>
 
     <!-- 打包编译 -->
@@ -303,13 +386,13 @@
                     </excludes>
                 </configuration>
                 <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>attach-test-jar</id>-->
-                        <!--<phase>package</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>test-jar</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
+                <!--<execution>-->
+                <!--<id>attach-test-jar</id>-->
+                <!--<phase>package</phase>-->
+                <!--<goals>-->
+                <!--<goal>test-jar</goal>-->
+                <!--</goals>-->
+                <!--</execution>-->
                 <!--</executions>-->
             </plugin>
             <plugin>
