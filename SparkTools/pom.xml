@@ -232,6 +232,11 @@
             <artifactId>commons-codec</artifactId>
             <version>1.10</version>
         </dependency>
+        <dependency>
+            <groupId>com.2dfire.spring.boot</groupId>
+            <artifactId>spring-boot-autoconfigure-monitor</artifactId>
+            <version>1.1.2</version>
+        </dependency>
     </dependencies>
 
     <!-- 打包编译 -->
