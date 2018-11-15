@@ -246,7 +246,7 @@
                     <descriptor>src/main/assembly/assembly.xml</descriptor>
                     <finalName>${project.build.finalName}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
-                    <outputDirectory>../</outputDirectory>
+                    <outputDirectory>${basedir}</outputDirectory>
                     <tarLongFileMode>posix</tarLongFileMode>
                 </configuration>
                 <executions>
