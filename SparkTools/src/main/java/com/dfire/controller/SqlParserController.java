@@ -26,7 +26,7 @@ public class SqlParserController {
     // http://127.0.0.1:8089/spark/sql/parser
 
     @RequestMapping("/parser")
-    public SparkPlanResultEntity getToken(@RequestBody String sql) {
+    public SparkPlanResultEntity parser(@RequestBody String sql) {
         SQLConf sqlConf = new SQLConf();
         CatalystSqlParser catalystSqlParser = new CatalystSqlParser(sqlConf);
         ResolveLogicalPlan resolveLogicalPlan = new ResolveLogicalPlan();
