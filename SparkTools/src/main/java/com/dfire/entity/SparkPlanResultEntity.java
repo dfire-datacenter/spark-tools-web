@@ -17,15 +17,19 @@ public class SparkPlanResultEntity {
 
     String outputTables;
 
+    String withTables;
+
     String errorMsg;
 
     public SparkPlanResultEntity(boolean isSuccess,
                                  String inputTables,
                                  String outputTables,
+                                 String withTables,
                                  String errorMsg) {
         this.isSuccess = isSuccess;
         this.inputTables = inputTables;
         this.outputTables = outputTables;
+        this.withTables = withTables;
         this.errorMsg = errorMsg;
     }
 

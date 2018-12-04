@@ -2,6 +2,7 @@ package com.dfire.controller;
 
 import com.dfire.ResolveLogicalPlan;
 import com.dfire.entity.SparkPlanResultEntity;
+import com.dfire.utils.HiveLineageUtils;
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.internal.SQLConf;
@@ -23,9 +24,9 @@ import java.util.Set;
 @RequestMapping("/sql")
 public class SqlParserController {
 
-    // http://127.0.0.1:8089/spark/sql/parser
+    // http://127.0.0.1:8089/sql/spark_parser
 
-    @RequestMapping("/parser")
+    @RequestMapping("/spark_parser")
     public SparkPlanResultEntity parser(@RequestBody String sql) {
         SQLConf sqlConf = new SQLConf();
         CatalystSqlParser catalystSqlParser = new CatalystSqlParser(sqlConf);
@@ -53,10 +54,44 @@ public class SqlParserController {
             System.out.println(outputTables);
             System.out.println(logicalPlan.toString());
         } catch (Exception e) {
-            return new SparkPlanResultEntity(false, null, null, e.toString());
+            return new SparkPlanResultEntity(
+                    false,
+                    null,
+                    null,
+                    null,
+                    e.toString()
+            );
         }
-        return new SparkPlanResultEntity(true, inputTables, outputTables, "");
-
+        return new SparkPlanResultEntity(
+                true,
+                inputTables,
+                outputTables,
+                null,
+                ""
+        );
     }
+
+    @RequestMapping("/hive_parser")
+    public SparkPlanResultEntity hiveParser(@RequestBody String sql) {
+        try {
+            HiveLineageUtils hiveLineageUtils = new HiveLineageUtils();
+            hiveLineageUtils.getLineageInfo(sql);
+            return new SparkPlanResultEntity(
+                    true,
+                    hiveLineageUtils.getInputTable(),
+                    hiveLineageUtils.getOutputTable(),
+                    hiveLineageUtils.getWithTable(),
+                    "");
+        } catch (Exception e) {
+            return new SparkPlanResultEntity(
+                    false,
+                    null,
+                    null,
+                    null,
+                    e.toString()
+            );
+        }
+    }
+
 
 }
