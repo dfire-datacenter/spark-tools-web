@@ -27,6 +27,11 @@
             <artifactId>SparkTools_Scala</artifactId>
             <version>1.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.dfire.products</groupId>
+            <artifactId>dw_lineage</artifactId>
+            <version>1.0</version>
+        </dependency>
 
         <!--spring-boot-->
         <dependency>

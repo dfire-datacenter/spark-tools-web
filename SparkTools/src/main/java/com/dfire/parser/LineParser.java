@@ -1,105 +1,108 @@
 package com.dfire.parser;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-import java.util.Map.Entry;
-import java.util.LinkedHashSet;
-
+import com.dfire.products.bean.Block;
+import com.dfire.products.bean.ColLine;
+import com.dfire.products.bean.QueryTree;
+import com.dfire.products.exception.SQLParseException;
+import com.dfire.products.exception.UnSupportedException;
+import com.dfire.products.util.*;
 import org.antlr.runtime.tree.Tree;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;
 
-import com.xiaoju.products.bean.Block;
-import com.xiaoju.products.bean.ColLine;
-import com.xiaoju.products.bean.QueryTree;
-import com.xiaoju.products.exception.SQLParseException;
-import com.xiaoju.products.exception.UnSupportedException;
-import com.xiaoju.products.util.Check;
-import com.xiaoju.products.util.MetaCache;
-import com.xiaoju.products.util.NumberUtil;
-import com.xiaoju.products.util.ParseUtil;
-import com.xiaoju.products.util.PropertyFileUtil;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * @Description :
- * @Author ： HeGuoZi
- * @Date ： 20:38 2018/12/3
- * @Modified :
- */
-/**
  * hive sql解析类
- *
+ * <p>
  * 目的：实现HQL的语句解析，分析出输入输出表、字段和相应的处理条件。为字段级别的数据血缘提供基础。
  * 重点：获取SELECT操作中的表和列的相关操作。其他操作这判断到字段级别。
  * 实现思路：对AST深度优先遍历，遇到操作的token则判断当前的操作，遇到子句则压栈当前处理，处理子句。子句处理完，栈弹出。
  * 处理字句的过程中，遇到子查询就保存当前子查询的信息，判断与其父查询的关系，最终形成树形结构；
  * 遇到字段或者条件处理则记录当前的字段和条件信息、组成Block，嵌套调用。
  * 关键点解析
- *         1、遇到TOK_TAB或TOK_TABREF则判断出当前操作的表
- *         2、压栈判断是否是join，判断join条件
- *         3、定义数据结构Block,遇到在where\select\join时获得其下相应的字段和条件，组成Block
- *         4、定义数据结构ColLine,遇到TOK_SUBQUERY保存当前的子查询信息，供父查询使用
- *         5、定义数据结构ColLine,遇到TOK_UNION结束时，合并并截断当前的列信息
- *         6、遇到select *　或者未明确指出的字段，查询元数据进行辅助分析
- *         7、解析结果进行相关校验
+ * 1、遇到TOK_TAB或TOK_TABREF则判断出当前操作的表
+ * 2、压栈判断是否是join，判断join条件
+ * 3、定义数据结构Block,遇到在where\select\join时获得其下相应的字段和条件，组成Block
+ * 4、定义数据结构ColLine,遇到TOK_SUBQUERY保存当前的子查询信息，供父查询使用
+ * 5、定义数据结构ColLine,遇到TOK_UNION结束时，合并并截断当前的列信息
+ * 6、遇到select *　或者未明确指出的字段，查询元数据进行辅助分析
+ * 7、解析结果进行相关校验
  * 试用范围：
  * 1、支持标准SQL
  * 2、不支持transform using script
- *
- * @author yangyangthomas
- *
+ * @Author ： HeGuoZi
+ * @Date ： 20:38 2018/12/3
+ * @Modified :
  */
 public class LineParser {
 
-    private static final String SPLIT_DOT = ".";
-    private static final String SPLIT_COMMA = ",";
-    private static final String SPLIT_AND = "&";
-    private static final String TOK_EOF = "<EOF>";
-    private static final String CON_WHERE = "WHERE:";
+    private static final String SPLIT_DOT    = ".";
+    private static final String SPLIT_COMMA  = ",";
+    private static final String SPLIT_AND    = "&";
+    private static final String TOK_EOF      = "<EOF>";
+    private static final String CON_WHERE    = "WHERE:";
     private static final String TOK_TMP_FILE = "TOK_TMP_FILE";
 
-    private Map<String /*table*/, List<String/*column*/>> dbMap = new HashMap<String, List<String>>();
-    private List<QueryTree> queryTreeList = new ArrayList<QueryTree>(); //子查询树形关系保存
+    private Map<String /*table*/, List<String/*column*/>> dbMap = new HashMap<>();
 
-    private Stack<Set<String>> conditionsStack = new Stack<Set<String>>();
-    private Stack<List<ColLine>> colsStack = new Stack<List<ColLine>>();
+    /**
+     * 子查询树形关系保存
+     */
+    private List<QueryTree> queryTreeList = new ArrayList<>();
 
-    private Map<String, List<ColLine>> resultQueryMap = new HashMap<String,  List<ColLine>>();
-    private Set<String> conditions = new HashSet<String>(); //where or join 条件缓存
-    private List<ColLine> cols = new ArrayList<ColLine>(); //一个子查询内的列缓存
+    private Stack<Set<String>>   conditionsStack = new Stack<>();
+    private Stack<List<ColLine>> colsStack       = new Stack<>();
 
-    private Stack<String> tableNameStack = new Stack<String>();
-    private Stack<Boolean> joinStack = new Stack<Boolean>();
-    private Stack<ASTNode> joinOnStack = new Stack<ASTNode>();
+    private Map<String, List<ColLine>> resultQueryMap = new HashMap<>();
 
-    private Map<String, QueryTree> queryMap = new HashMap<String, QueryTree>();
-    private boolean joinClause = false;
-    private ASTNode joinOn = null;
-    private String nowQueryDB = "default"; //hive的默认库
+    /**
+     * where or join 条件缓存
+     */
+    private Set<String> conditions = new HashSet<>();
+
+    /**
+     * 一个子查询内的列缓存
+     */
+    private List<ColLine> cols = new ArrayList<>();
+
+    private Stack<String>  tableNameStack = new Stack<>();
+    private Stack<Boolean> joinStack      = new Stack<>();
+    private Stack<ASTNode> joinOnStack    = new Stack<>();
+
+    private Map<String, QueryTree> queryMap   = new HashMap<>();
+    private boolean                joinClause = false;
+    private ASTNode                joinOn     = null;
+
+    /**
+     * hive的默认库
+     */
+    private String  nowQueryDB    = "default";
     private boolean isCreateTable = false;
 
-    //结果
-    private List<ColLine> colLines = new ArrayList<ColLine>();
-    private Set<String> outputTables = new HashSet<String>();
-    private Set<String> inputTables = new HashSet<String>();
+    /**
+     * 结果
+     */
+    private List<ColLine> colLines     = new ArrayList<>();
+    private Set<String>   outputTables = new HashSet<>();
+    private Set<String>   inputTables  = new HashSet<>();
 
-    private List<ColLine> tmpColLines = new ArrayList<ColLine>();
-    private Set<String> tmpOutputTables = new HashSet<String>();
-    private Set<String> tmpInputTables = new HashSet<String>();
+    private List<ColLine> tmpColLines     = new ArrayList<>();
+    private Set<String>   tmpOutputTables = new HashSet<>();
+    private Set<String>   tmpInputTables  = new HashSet<>();
 
     public List<ColLine> getColLines() {
         return colLines;
     }
+
     public Set<String> getOutputTables() {
         return outputTables;
     }
+
     public Set<String> getInputTables() {
         return inputTables;
     }
@@ -113,26 +116,31 @@ public class LineParser {
 
     /**
      * 解析当前节点
+     *
      * @param ast
-     * @param set
      * @return
      */
-    private void parseCurrentNode(ASTNode ast){
+    private void parseCurrentNode(ASTNode ast) {
         if (ast.getToken() != null) {
             switch (ast.getToken().getType()) {
-                case HiveParser.TOK_CREATETABLE: //outputtable
+                //outputtable
+                case HiveParser.TOK_CREATETABLE:
                     isCreateTable = true;
                     String tableOut = fillDB(BaseSemanticAnalyzer.getUnescapedName((ASTNode) ast.getChild(0)));
                     tmpOutputTables.add(tableOut);
-                    MetaCache.getInstance().init(tableOut); //初始化数据，供以后使用
+                    //初始化数据，供以后使用
+                    MetaCache.getInstance().init(tableOut);
                     break;
-                case HiveParser.TOK_TAB:// outputTable
+                // outputTable
+                case HiveParser.TOK_TAB:
                     String tableTab = BaseSemanticAnalyzer.getUnescapedName((ASTNode) ast.getChild(0));
                     String tableOut2 = fillDB(tableTab);
                     tmpOutputTables.add(tableOut2);
-                    MetaCache.getInstance().init(tableOut2); //初始化数据，供以后使用
+                    //初始化数据，供以后使用
+                    MetaCache.getInstance().init(tableOut2);
                     break;
-                case HiveParser.TOK_TABREF:// inputTable
+                // inputTable
+                case HiveParser.TOK_TABREF:
                     ASTNode tabTree = (ASTNode) ast.getChild(0);
                     String tableInFull = fillDB((tabTree.getChildCount() == 1) ?
                             BaseSemanticAnalyzer.getUnescapedName((ASTNode) tabTree.getChild(0))
@@ -141,10 +149,12 @@ public class LineParser {
                     );
                     String tableIn = tableInFull.substring(tableInFull.indexOf(SPLIT_DOT) + 1);
                     tmpInputTables.add(tableInFull);
-                    MetaCache.getInstance().init(tableInFull); //初始化数据，供以后使用
+                    //初始化数据，供以后使用
+                    MetaCache.getInstance().init(tableInFull);
                     queryMap.clear();
                     String alia = null;
-                    if (ast.getChild(1) != null) { //(TOK_TABREF (TOK_TABNAME detail usersequence_client) c)
+                    //(TOK_TABREF (TOK_TABNAME detail usersequence_client) c)
+                    if (ast.getChild(1) != null) {
                         alia = ast.getChild(1).getText().toLowerCase();
                         QueryTree qt = new QueryTree();
                         qt.setCurrent(alia);
@@ -153,8 +163,10 @@ public class LineParser {
                         qt.setpId(pTree.getpId());
                         qt.setParent(pTree.getParent());
                         queryTreeList.add(qt);
-                        if (joinClause && ast.getParent() == joinOn) { // TOK_SUBQUERY join TOK_TABREF ,此处的TOK_SUBQUERY信息不应该清楚
-                            for (QueryTree entry : queryTreeList) { //当前的查询范围
+                        // TOK_SUBQUERY join TOK_TABREF ,此处的TOK_SUBQUERY信息不应该清楚
+                        if (joinClause && ast.getParent() == joinOn) {
+                            //当前的查询范围
+                            for (QueryTree entry : queryTreeList) {
                                 if (qt.getParent().equals(entry.getParent())) {
                                     queryMap.put(entry.getCurrent(), entry);
                                 }
@@ -189,8 +201,8 @@ public class LineParser {
                     if (ast.getChildCount() == 2) {
                         String tableAlias = BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(1).getText());
                         String aliaReal = "";
-                        if(aliaReal.length() !=0){
-                            aliaReal = aliaReal.substring(0, aliaReal.length()-1);
+                        if (aliaReal.length() != 0) {
+                            aliaReal = aliaReal.substring(0, aliaReal.length() - 1);
                         }
 
                         QueryTree qt = new QueryTree();
@@ -204,7 +216,8 @@ public class LineParser {
                         if (Check.notEmpty(qt.getChildList())) {
                             for (QueryTree cqt : qt.getChildList()) {
                                 qt.getTableSet().addAll(cqt.getTableSet());
-                                queryTreeList.remove(cqt);  // 移除子节点信息
+                                // 移除子节点信息
+                                queryTreeList.remove(cqt);
                             }
                         }
                         queryTreeList.add(qt);
@@ -212,13 +225,15 @@ public class LineParser {
 
                         queryMap.clear();
                         for (QueryTree _qt : queryTreeList) {
-                            if (qt.getParent().equals( _qt.getParent())) { //当前子查询才保存
+                            //当前子查询才保存
+                            if (qt.getParent().equals(_qt.getParent())) {
                                 queryMap.put(_qt.getCurrent(), _qt);
                             }
                         }
                     }
                     break;
-                case HiveParser.TOK_SELEXPR: //输入输出字段的处理
+                //输入输出字段的处理
+                case HiveParser.TOK_SELEXPR:
                     /**
                      * (TOK_DESTINATION (TOK_DIR TOK_TMP_FILE))
                      *     (TOK_SELECT (TOK_SELEXPR TOK_ALLCOLREF))
@@ -244,10 +259,11 @@ public class LineParser {
                         }
                         String[] result = getTableAndAlia(tableOrAlias);
                         String _alia = result[1];
-
-                        boolean isSub = false;  //处理嵌套select * 的情况
+                        //处理嵌套select * 的情况
+                        boolean isSub = false;
                         if (Check.notEmpty(_alia)) {
-                            for (String string : _alia.split(SPLIT_AND)) { //迭代循环的时候查询
+                            //迭代循环的时候查询
+                            for (String string : _alia.split(SPLIT_AND)) {
                                 QueryTree qt = queryMap.get(string.toLowerCase());
                                 if (null != qt) {
                                     List<ColLine> colLineList = qt.getColLineList();
@@ -260,33 +276,36 @@ public class LineParser {
                                 }
                             }
                         }
-                        if (!isSub) { //处理直接select * 的情况
-                            String nowTable =  result[0];
-                            String[] tableArr = nowTable.split(SPLIT_AND); //fact.test&test2
+                        //处理直接select * 的情况
+                        if (!isSub) {
+                            String nowTable = result[0];
+                            //fact.test&test2
+                            String[] tableArr = nowTable.split(SPLIT_AND);
                             for (String tables : tableArr) {
                                 String[] split = tables.split("\\.");
                                 if (split.length > 2) {
                                     throw new SQLParseException("parse table:" + nowTable);
                                 }
-                                List<String> colByTab =  MetaCache.getInstance().getColumnByDBAndTable(tables);
+                                List<String> colByTab = MetaCache.getInstance().getColumnByDBAndTable(tables);
                                 for (String column : colByTab) {
-                                    Set<String> fromNameSet = new LinkedHashSet<String>();
+                                    Set<String> fromNameSet = new LinkedHashSet<>();
                                     fromNameSet.add(tables + SPLIT_DOT + column);
                                     ColLine cl = new ColLine(column, tables + SPLIT_DOT + column, fromNameSet,
-                                            new LinkedHashSet<String>() , destTable, column);
+                                            new LinkedHashSet<>(), destTable, column);
                                     cols.add(cl);
                                 }
                             }
                         }
                     } else {
-                        Block bk = getBlockIteral((ASTNode)ast.getChild(0));
+                        Block bk = getBlockIteral((ASTNode) ast.getChild(0));
                         String toNameParse = getToNameParse(ast, bk);
-                        Set<String> fromNameSet  = filterData(bk.getColSet());
-                        ColLine cl = new ColLine(toNameParse, bk.getCondition(), fromNameSet, new LinkedHashSet<String>() , destTable, "");
+                        Set<String> fromNameSet = filterData(bk.getColSet());
+                        ColLine cl = new ColLine(toNameParse, bk.getCondition(), fromNameSet, new LinkedHashSet<String>(), destTable, "");
                         cols.add(cl);
                     }
                     break;
-                case HiveParser.TOK_WHERE: //3、过滤条件的处理select类
+                //3、过滤条件的处理select类
+                case HiveParser.TOK_WHERE:
                     conditions.add(CON_WHERE + getBlockIteral((ASTNode) ast.getChild(0)).getCondition());
                     break;
                 default:
@@ -299,7 +318,7 @@ public class LineParser {
                     //1、过滤条件的处理join类
                     if (joinOn != null && joinOn.getTokenStartIndex() == ast.getTokenStartIndex()
                             && joinOn.getTokenStopIndex() == ast.getTokenStopIndex()) {
-                        ASTNode astCon = (ASTNode)ast.getChild(2);
+                        ASTNode astCon = (ASTNode) ast.getChild(2);
                         conditions.add(ast.getText().substring(4) + ":" + getBlockIteral(astCon).getCondition());
                         break;
                     }
@@ -309,15 +328,16 @@ public class LineParser {
 
     /**
      * 查找当前节点的父子查询节点
+     *
      * @param ast
      */
     private QueryTree getSubQueryParent(Tree ast) {
         Tree _tree = ast;
         QueryTree qt = new QueryTree();
-        while(!(_tree = _tree.getParent()).isNil()){
-            if(_tree.getType() == HiveParser.TOK_SUBQUERY){
+        while (!(_tree = _tree.getParent()).isNil()) {
+            if (_tree.getType() == HiveParser.TOK_SUBQUERY) {
                 qt.setpId(generateTreeId(_tree));
-                qt.setParent(BaseSemanticAnalyzer.getUnescapedName((ASTNode)_tree.getChild(1)));
+                qt.setParent(BaseSemanticAnalyzer.getUnescapedName((ASTNode) _tree.getChild(1)));
                 return qt;
             }
         }
@@ -325,6 +345,7 @@ public class LineParser {
         qt.setParent("NIL");
         return qt;
     }
+
     private int generateTreeId(Tree tree) {
         return tree.getTokenStartIndex() + tree.getTokenStopIndex();
     }
@@ -332,10 +353,11 @@ public class LineParser {
 
     /**
      * 查找当前节点的子子查询节点（索引）
-     * @param ast
+     *
+     * @param id
      */
     private List<QueryTree> getSubQueryChilds(int id) {
-        List<QueryTree> list = new ArrayList<QueryTree>();
+        List<QueryTree> list = new ArrayList<>();
         for (int i = 0; i < queryTreeList.size(); i++) {
             QueryTree qt = queryTreeList.get(i);
             if (id == qt.getpId()) {
@@ -347,6 +369,7 @@ public class LineParser {
 
     /**
      * 获得要解析的名称
+     *
      * @param ast
      * @param bk
      * @return
@@ -354,14 +377,17 @@ public class LineParser {
     private String getToNameParse(ASTNode ast, Block bk) {
         String alia = "";
         Tree child = ast.getChild(0);
-        if (ast.getChild(1) != null) { //有别名 ip as alia
+        //有别名 ip as alia
+        if (ast.getChild(1) != null) {
             alia = ast.getChild(1).getText();
-        } else if (child.getType() == HiveParser.DOT //没有别名 a.ip
+        } else if (child.getType() == HiveParser.DOT
+                //没有别名 a.ip
                 && child.getChild(0).getType() == HiveParser.TOK_TABLE_OR_COL
                 && child.getChild(0).getChildCount() == 1
                 && child.getChild(1).getType() == HiveParser.Identifier) {
             alia = BaseSemanticAnalyzer.unescapeIdentifier(child.getChild(1).getText());
-        } else if (child.getType() == HiveParser.TOK_TABLE_OR_COL //没有别名 ip
+        } else if (child.getType() == HiveParser.TOK_TABLE_OR_COL
+                //没有别名 ip
                 && child.getChildCount() == 1
                 && child.getChild(0).getType() == HiveParser.Identifier) {
             alia = BaseSemanticAnalyzer.unescapeIdentifier(child.getChild(0).getText());
@@ -374,16 +400,17 @@ public class LineParser {
      * 如： <p>where a=1
      * <p>t1 join t2 on t1.col1=t2.col1 and t1.col2=123
      * <p>select count(distinct col1) from t1
+     *
      * @param ast
      * @return
      */
     private Block getBlockIteral(ASTNode ast) {
         if (ast.getType() == HiveParser.KW_OR
-                ||ast.getType() == HiveParser.KW_AND) {
-            Block bk1 = getBlockIteral((ASTNode)ast.getChild(0));
-            Block bk2 = getBlockIteral((ASTNode)ast.getChild(1));
+                || ast.getType() == HiveParser.KW_AND) {
+            Block bk1 = getBlockIteral((ASTNode) ast.getChild(0));
+            Block bk2 = getBlockIteral((ASTNode) ast.getChild(1));
             bk1.getColSet().addAll(bk2.getColSet());
-            bk1.setCondition("(" +  bk1.getCondition() + " " + ast.getText() + " " + bk2.getCondition() + ")");
+            bk1.setCondition("(" + bk1.getCondition() + " " + ast.getText() + " " + bk2.getCondition() + ")");
             return bk1;
         } else if (ast.getType() == HiveParser.NOTEQUAL //判断条件  > < like in
                 || ast.getType() == HiveParser.EQUAL
@@ -401,11 +428,12 @@ public class LineParser {
                 || ast.getType() == HiveParser.TILDE
                 || ast.getType() == HiveParser.BITWISEOR
                 || ast.getType() == HiveParser.BITWISEXOR) {
-            Block bk1 = getBlockIteral((ASTNode)ast.getChild(0));
-            if (ast.getChild(1) == null) { // -1
+            Block bk1 = getBlockIteral((ASTNode) ast.getChild(0));
+            if (ast.getChild(1) == null) {
+                // -1
                 bk1.setCondition(ast.getText() + bk1.getCondition());
             } else {
-                Block bk2 = getBlockIteral((ASTNode)ast.getChild(1));
+                Block bk2 = getBlockIteral((ASTNode) ast.getChild(1));
                 bk1.getColSet().addAll(bk2.getColSet());
                 bk1.setCondition(bk1.getCondition() + " " + ast.getText() + " " + bk2.getCondition());
             }
@@ -413,9 +441,9 @@ public class LineParser {
         } else if (ast.getType() == HiveParser.TOK_FUNCTIONDI) {
             Block col = getBlockIteral((ASTNode) ast.getChild(1));
             String condition = ast.getChild(0).getText();
-            col.setCondition(condition + "(distinct (" + col.getCondition() +"))");
+            col.setCondition(condition + "(distinct (" + col.getCondition() + "))");
             return col;
-        } else if (ast.getType() == HiveParser.TOK_FUNCTION){
+        } else if (ast.getType() == HiveParser.TOK_FUNCTION) {
             String fun = ast.getChild(0).getText();
             Block col = ast.getChild(1) == null ? new Block() : getBlockIteral((ASTNode) ast.getChild(1));
             if ("when".equalsIgnoreCase(fun)) {
@@ -423,14 +451,15 @@ public class LineParser {
                 Set<Block> processChilds = processChilds(ast, 1);
                 col.getColSet().addAll(bkToCols(col, processChilds));
                 return col;
-            } else if("IN".equalsIgnoreCase(fun)) {
+            } else if ("IN".equalsIgnoreCase(fun)) {
                 col.setCondition(col.getCondition() + " in (" + blockCondToString(processChilds(ast, 2)) + ")");
                 return col;
-            } else if("TOK_ISNOTNULL".equalsIgnoreCase(fun) //isnull isnotnull
-                    || "TOK_ISNULL".equalsIgnoreCase(fun)){
+            } else if ("TOK_ISNOTNULL".equalsIgnoreCase(fun)
+                    || "TOK_ISNULL".equalsIgnoreCase(fun)) {
+                //isnull isnotnull
                 col.setCondition(col.getCondition() + " " + fun.toLowerCase().substring(4));
                 return col;
-            } else if("BETWEEN".equalsIgnoreCase(fun)){
+            } else if ("BETWEEN".equalsIgnoreCase(fun)) {
                 col.setCondition(getBlockIteral((ASTNode) ast.getChild(2)).getCondition()
                         + " between " + getBlockIteral((ASTNode) ast.getChild(3)).getCondition()
                         + " and " + getBlockIteral((ASTNode) ast.getChild(4)).getCondition());
@@ -438,12 +467,13 @@ public class LineParser {
             }
             Set<Block> processChilds = processChilds(ast, 1);
             col.getColSet().addAll(bkToCols(col, processChilds));
-            col.setCondition(fun +"("+ blockCondToString(processChilds) + ")");
+            col.setCondition(fun + "(" + blockCondToString(processChilds) + ")");
             return col;
-        } else if(ast.getType() == HiveParser.LSQUARE){ //map,array
+        } else if (ast.getType() == HiveParser.LSQUARE) {
+            //map,array
             Block column = getBlockIteral((ASTNode) ast.getChild(0));
             Block key = getBlockIteral((ASTNode) ast.getChild(1));
-            column.setCondition(column.getCondition() +"["+ key.getCondition() + "]");
+            column.setCondition(column.getCondition() + "[" + key.getCondition() + "]");
             return column;
         } else {
             return parseBlock(ast);
@@ -452,7 +482,7 @@ public class LineParser {
 
 
     private Set<String> bkToCols(Block col, Set<Block> processChilds) {
-        Set<String> set = new LinkedHashSet<String>(processChilds.size());
+        Set<String> set = new LinkedHashSet<>(processChilds.size());
         for (Block colLine : processChilds) {
             if (Check.notEmpty(colLine.getColSet())) {
                 set.addAll(colLine.getColSet());
@@ -466,14 +496,15 @@ public class LineParser {
         for (Block colLine : processChilds) {
             sb.append(colLine.getCondition()).append(SPLIT_COMMA);
         }
-        if (sb.length()>0) {
-            sb.setLength(sb.length()-1);
+        if (sb.length() > 0) {
+            sb.setLength(sb.length() - 1);
         }
         return sb.toString();
     }
 
     /**
      * 解析when条件
+     *
      * @param ast
      * @return case when c1>100 then col1 when c1>0 col2 else col3 end
      */
@@ -481,12 +512,12 @@ public class LineParser {
         int cnt = ast.getChildCount();
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i < cnt; i++) {
-            String condition = getBlockIteral((ASTNode)ast.getChild(i)).getCondition();
+            String condition = getBlockIteral((ASTNode) ast.getChild(i)).getCondition();
             if (i == 1) {
                 sb.append("(case when " + condition);
-            } else if (i == cnt-1) { //else
+            } else if (i == cnt - 1) {
                 sb.append(" else " + condition + " end)");
-            } else if (i % 2 == 0){ //then
+            } else if (i % 2 == 0) {
                 sb.append(" then " + condition);
             } else {
                 sb.append(" when " + condition);
@@ -498,17 +529,19 @@ public class LineParser {
 
     /**
      * 保存subQuery查询别名和字段信息
+     *
      * @param sqlIndex
      * @param tableAlias
      */
     private void putResultQueryMap(int sqlIndex, String tableAlias) {
         List<ColLine> list = generateColLineList(cols, conditions);
-        String key = sqlIndex == 0 ? tableAlias : tableAlias + sqlIndex; //没有重名的情况就不用标记
+        //没有重名的情况就不用标记
+        String key = sqlIndex == 0 ? tableAlias : tableAlias + sqlIndex;
         resultQueryMap.put(key, list);
     }
 
     private List<ColLine> generateColLineList(List<ColLine> cols, Set<String> conditions) {
-        List<ColLine> list = new ArrayList<ColLine>();
+        List<ColLine> list = new ArrayList<>();
         for (ColLine entry : cols) {
             entry.getConditionSet().addAll(conditions);
             list.add(ParseUtil.cloneColLine(entry));
@@ -529,18 +562,17 @@ public class LineParser {
 
     /**
      * 从指定索引位置开始解析子树
+     *
      * @param ast
      * @param startIndex 开始索引
-     * @param isSimple 是否简写
-     * @param withCond 是否包含条件
      * @return
      */
-    private Set<Block> processChilds(ASTNode ast,int startIndex) {
+    private Set<Block> processChilds(ASTNode ast, int startIndex) {
         int cnt = ast.getChildCount();
-        Set<Block> set = new LinkedHashSet<Block>();
+        Set<Block> set = new LinkedHashSet<>();
         for (int i = startIndex; i < cnt; i++) {
             Block bk = getBlockIteral((ASTNode) ast.getChild(i));
-            if (Check.notEmpty(bk.getCondition()) || Check.notEmpty(bk.getColSet())){
+            if (Check.notEmpty(bk.getCondition()) || Check.notEmpty(bk.getColSet())) {
                 set.add(bk);
             }
         }
@@ -550,8 +582,8 @@ public class LineParser {
 
     /**
      * 解析获得列名或者字符数字等和条件
+     *
      * @param ast
-     * @param isSimple
      * @return
      */
     private Block parseBlock(ASTNode ast) {
@@ -581,17 +613,17 @@ public class LineParser {
 
     /**
      * 根据列名和别名获得块信息
+     *
      * @param column
      * @param alia
-     * @param tree 当前子查询下的别名可以使用
      * @return
      */
     private Block getBlock(String column, String alia) {
         String[] result = getTableAndAlia(alia);
         String tableArray = result[0];
         String _alia = result[1];
-
-        for (String string : _alia.split(SPLIT_AND)) { //迭代循环的时候查询
+        //迭代循环的时候查询
+        for (String string : _alia.split(SPLIT_AND)) {
             QueryTree qt = queryMap.get(string.toLowerCase());
             if (Check.notEmpty(column)) {
                 for (ColLine colLine : qt.getColLineList()) {
@@ -606,13 +638,15 @@ public class LineParser {
         }
 
         String _realTable = tableArray;
-        int cnt = 0; //匹配字段和元数据字段相同数目，如果有多个匹配，即此sql有二义性
-        for (String tables : tableArray.split(SPLIT_AND)) { //初始化的时候查询数据库对应表
+        //匹配字段和元数据字段相同数目，如果有多个匹配，即此sql有二义性
+        int cnt = 0;
+        //初始化的时候查询数据库对应表
+        for (String tables : tableArray.split(SPLIT_AND)) {
             String[] split = tables.split("\\.");
             if (split.length > 2) {
                 throw new SQLParseException("parse table:" + tables);
             }
-            List<String> colByTab =  MetaCache.getInstance().getColumnByDBAndTable(tables);
+            List<String> colByTab = MetaCache.getInstance().getColumnByDBAndTable(tables);
             for (String col : colByTab) {
                 if (column.equalsIgnoreCase(col)) {
                     _realTable = tables;
@@ -623,7 +657,8 @@ public class LineParser {
 
 //      if (cnt == 0) { //此类没有找到的检查在Validater类中检查
 //      }
-        if (cnt > 1) { //二义性检查
+        //二义性检查
+        if (cnt > 1) {
             throw new SQLParseException("SQL is ambiguity, column: " + column + " tables:" + tableArray);
         }
 
@@ -635,11 +670,12 @@ public class LineParser {
 
     /**
      * 过滤掉无用的列：如col1,123,'2013',col2 ==>> col1,col2
-     * @param col
+     *
+     * @param colSet
      * @return
      */
-    private Set<String> filterData(Set<String> colSet){
-        Set<String> set  = new LinkedHashSet<String>();
+    private Set<String> filterData(Set<String> colSet) {
+        Set<String> set = new LinkedHashSet<>();
         for (String string : colSet) {
             if (!notNormalCol(string)) {
                 set.add(string);
@@ -651,10 +687,11 @@ public class LineParser {
 
     /**
      * 解析所有子节点
+     *
      * @param ast
      * @return
      */
-    private void parseChildNodes(ASTNode ast){
+    private void parseChildNodes(ASTNode ast) {
         int numCh = ast.getChildCount();
         if (numCh > 0) {
             for (int num = 0; num < numCh; num++) {
@@ -666,13 +703,14 @@ public class LineParser {
 
     /**
      * 准备解析当前节点
+     *
      * @param ast
      */
-    private void prepareToParseCurrentNodeAndChilds(ASTNode ast){
+    private void prepareToParseCurrentNodeAndChilds(ASTNode ast) {
         if (ast.getToken() != null) {
             switch (ast.getToken().getType()) {
                 case HiveParser.TOK_SWITCHDATABASE:
-                    System.out.println("nowQueryDB changed " + nowQueryDB+ " to " +ast.getChild(0).getText());
+                    System.out.println("nowQueryDB changed " + nowQueryDB + " to " + ast.getChild(0).getText());
                     nowQueryDB = ast.getChild(0).getText();
                     break;
                 case HiveParser.TOK_TRANSFORM:
@@ -696,12 +734,14 @@ public class LineParser {
 
     /**
      * 结束解析当前节点
+     *
      * @param ast
      */
-    private void endParseCurrentNode(ASTNode ast){
+    private void endParseCurrentNode(ASTNode ast) {
         if (ast.getToken() != null) {
             Tree parent = ast.getParent();
-            switch (ast.getToken().getType()) { //join 从句结束，跳出join
+            //join 从句结束，跳出join
+            switch (ast.getToken().getType()) {
                 case HiveParser.TOK_RIGHTOUTERJOIN:
                 case HiveParser.TOK_LEFTOUTERJOIN:
                 case HiveParser.TOK_JOIN:
@@ -714,23 +754,28 @@ public class LineParser {
                     break;
 
                 case HiveParser.TOK_QUERY:
-                    processUnionStack(ast, parent); //union的子节点
+                    //union的子节点
+                    processUnionStack(ast, parent);
                 case HiveParser.TOK_INSERT:
                 case HiveParser.TOK_SELECT:
                     break;
-                case HiveParser.TOK_UNION:  //合并union字段信息
+                //合并union字段信息
+                case HiveParser.TOK_UNION:
                     mergeUnionCols();
-                    processUnionStack(ast, parent); //union的子节点
+                    //union的子节点
+                    processUnionStack(ast, parent);
                     break;
             }
         }
     }
+
     private void mergeUnionCols() {
         validateUnion(cols);
         int size = cols.size();
         int colNum = size / 2;
-        List<ColLine> list = new ArrayList<ColLine>(colNum);
-        for (int i = 0; i < colNum; i++) { //合并字段
+        List<ColLine> list = new ArrayList<>(colNum);
+        //合并字段
+        for (int i = 0; i < colNum; i++) {
             ColLine col = cols.get(i);
             for (int j = i + colNum; j < size; j = j + colNum) {
                 ColLine col2 = cols.get(j);
@@ -748,12 +793,15 @@ public class LineParser {
                 col.getConditionSet().addAll(conditionSet);
             }
         }
-        cols.removeAll(list); //移除已经合并的数据
+        //移除已经合并的数据
+        cols.removeAll(list);
     }
+
     private void processUnionStack(ASTNode ast, Tree parent) {
         boolean isNeedAdd = parent.getType() == HiveParser.TOK_UNION;
         if (isNeedAdd) {
-            if (parent.getChild(0) == ast && parent.getChild(1) != null) {//有弟节点(是第一节点)
+            //有弟节点(是第一节点)
+            if (parent.getChild(0) == ast && parent.getChild(1) != null) {
                 //压栈
                 conditionsStack.push(ParseUtil.cloneSet(conditions));
                 conditions.clear();
@@ -775,12 +823,14 @@ public class LineParser {
         parseIteral(ast);
     }
 
-    public void parse(String sqlAll) throws Exception{
+    public void parse(String sqlAll) throws Exception {
         if (Check.isEmpty(sqlAll)) {
             return;
         }
-        startParseAll(); //清空最终结果集
-        int i = 0; //当前是第几个sql
+        //清空最终结果集
+        startParseAll();
+        //当前是第几个sql
+        int i = 0;
         for (String sql : sqlAll.split("(?<!\\\\);")) {
             ParseDriver pd = new ParseDriver();
             String trim = sql.toLowerCase().trim();
@@ -847,14 +897,14 @@ public class LineParser {
      * 设置输出表的字段对应关系
      */
     private void setColLineList() {
-        Map<String, List<ColLine>> map = new HashMap<String, List<ColLine>>();
+        Map<String, List<ColLine>> map = new HashMap<>();
         for (Entry<String, List<ColLine>> entry : resultQueryMap.entrySet()) {
             if (entry.getKey().startsWith(TOK_EOF)) {
                 List<ColLine> value = entry.getValue();
                 for (ColLine colLine : value) {
                     List<ColLine> list = map.get(colLine.getToTable());
                     if (Check.isEmpty(list)) {
-                        list = new ArrayList<ColLine>();
+                        list = new ArrayList<>();
                         map.put(colLine.getToTable(), list);
                     }
                     list.add(colLine);
@@ -867,7 +917,8 @@ public class LineParser {
             List<ColLine> pList = entry.getValue();
             List<String> dList = dbMap.get(table);
             int metaSize = Check.isEmpty(dList) ? 0 : dList.size();
-            for (int i = 0; i < pList.size(); i++) { //按顺序插入对应的字段
+            //按顺序插入对应的字段
+            for (int i = 0; i < pList.size(); i++) {
                 ColLine clp = pList.get(i);
                 String colName = null;
                 if (i < metaSize) {
@@ -895,7 +946,7 @@ public class LineParser {
 
     private void putDBMap() {
         for (String table : tmpOutputTables) {
-            List<String> list =  MetaCache.getInstance().getColumnByDBAndTable(table);
+            List<String> list = MetaCache.getInstance().getColumnByDBAndTable(table);
             dbMap.put(table, list);
         }
     }
@@ -905,26 +956,28 @@ public class LineParser {
      * table1 ==>> db1.table1
      * db1.table1 ==>> db1.table1
      * db2.t1&t2 ==>> db2.t1&db1.t2
-     * @param tables
+     *
+     * @param nowTable
      */
     private String fillDB(String nowTable) {
         if (Check.isEmpty(nowTable)) {
             return nowTable;
         }
         StringBuilder sb = new StringBuilder();
-        String[] tableArr = nowTable.split(SPLIT_AND); //fact.test&test2&test3
+        //fact.test&test2&test3
+        String[] tableArr = nowTable.split(SPLIT_AND);
         for (String tables : tableArr) {
             String[] split = tables.split("\\" + SPLIT_DOT);
             if (split.length > 2) {
                 System.out.println(tables);
                 throw new SQLParseException("parse table:" + nowTable);
             }
-            String db = split.length == 2 ? split[0] : nowQueryDB ;
-            String table = split.length == 2 ? split[1] : split[0] ;
+            String db = split.length == 2 ? split[0] : nowQueryDB;
+            String table = split.length == 2 ? split[1] : split[0];
             sb.append(db).append(SPLIT_DOT).append(table).append(SPLIT_AND);
         }
-        if (sb.length()>0) {
-            sb.setLength(sb.length()-1);
+        if (sb.length() > 0) {
+            sb.setLength(sb.length() - 1);
         }
         return sb.toString();
     }
@@ -932,13 +985,14 @@ public class LineParser {
 
     /**
      * 根据别名查询表明
+     *
      * @param alia
      * @return
      */
     private String[] getTableAndAlia(String alia) {
-        String _alia = Check.notEmpty(alia) ? alia  :
-                ParseUtil.collectionToString(queryMap.keySet(), SPLIT_AND, true) ;
-        String[] result = {"" , _alia};
+        String _alia = Check.notEmpty(alia) ? alia :
+                ParseUtil.collectionToString(queryMap.keySet(), SPLIT_AND, true);
+        String[] result = {"", _alia};
         Set<String> tableSet = new HashSet<String>();
         if (Check.notEmpty(_alia)) {
             String[] split = _alia.split(SPLIT_AND);
@@ -958,9 +1012,10 @@ public class LineParser {
 
     /**
      * 校验union
+     *
      * @param list
      */
-    private void validateUnion(List<ColLine> list){
+    private void validateUnion(List<ColLine> list) {
         int size = list.size();
         if (size % 2 == 1) {
             throw new SQLParseException("union column number are different, size=" + size);
@@ -972,12 +1027,13 @@ public class LineParser {
 
     private void checkUnion(List<ColLine> list, int start, int end) {
         String tmp = null;
-        for (int i = start; i < end; i++) { //合并字段
+        //合并字段
+        for (int i = start; i < end; i++) {
             ColLine col = list.get(i);
             if (Check.isEmpty(tmp)) {
                 tmp = col.getToTable();
-            } else if (!tmp.equals(col.getToTable())){
-                throw new SQLParseException("union column number/types are different,table1=" + tmp +",table2="+ col.getToTable());
+            } else if (!tmp.equals(col.getToTable())) {
+                throw new SQLParseException("union column number/types are different,table1=" + tmp + ",table2=" + col.getToTable());
             }
         }
     }
