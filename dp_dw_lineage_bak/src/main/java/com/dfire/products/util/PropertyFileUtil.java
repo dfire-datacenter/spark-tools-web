@@ -66,7 +66,7 @@ public class PropertyFileUtil {
     /**
      * 内部处理
      *
-     * @param conf String fileNames = "app.properties";
+     * @param is String fileNames = "app.properties";
      * @throws IOException
      */
     private static void loadProperty(InputStream is) {

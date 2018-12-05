@@ -8,22 +8,22 @@ import java.util.*;
  */
 public class JdbcCypherExecutor implements CypherExecutor {
 
-    private Connection conn=null;
+    private Connection conn = null;
 
     public JdbcCypherExecutor(String url) {
         this(url, null, null);
     }
-    
+
     public JdbcCypherExecutor(String url, String username, String password) {
         try {
-        	String neo4j="org.neo4j.jdbc.Driver";
-        	Class.forName(neo4j);
+            String neo4j = "org.neo4j.jdbc.Driver";
+            Class.forName(neo4j);
             conn = DriverManager.getConnection(url.replace("http://", "jdbc:neo4j://"), username, password);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
+            e.printStackTrace();
+        }
     }
 
     public Iterator<Map<String, Object>> query(String query, Map<String, Object> params) {
@@ -80,26 +80,26 @@ public class JdbcCypherExecutor implements CypherExecutor {
             statement.setObject(index, entry.getValue());
         }
     }
-    
-	public int exec(String sql) {
+
+    public int exec(String sql) {
         try {
             final PreparedStatement statement = conn.prepareStatement(sql);
             return statement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-	}
-	
-	public int exec(String sql, List<Object> objs) {
+    }
+
+    public int exec(String sql, List<Object> objs) {
         try {
             final PreparedStatement statement = conn.prepareStatement(sql);
             int i = 0;
             for (Object object : objs) {
-            	statement.setObject(++i, object);
-			}
+                statement.setObject(++i, object);
+            }
             return statement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-	}
+    }
 }

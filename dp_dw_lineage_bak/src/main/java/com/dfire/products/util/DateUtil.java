@@ -5,12 +5,7 @@ package com.dfire.products.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public final class DateUtil {
 
@@ -26,6 +21,7 @@ public final class DateUtil {
 
     /**
      * 得到当前季度的最后一天 格式为：xxxx-yy-zz (eg: 2013-12-31)<br>
+     *
      * @return 当前月份月底 格式的字符串
      */
     public static String getQuarterEnd(final Date oDate) {
@@ -53,6 +49,7 @@ public final class DateUtil {
 
     /**
      * 得到当前季度的第一天 格式为：xxxx-yy-zz (eg: 2013-04-01)<br>
+     *
      * @return 当前月份月底 格式的字符串
      */
     public static String getQuarterStart(final Date oDate) {
@@ -80,6 +77,7 @@ public final class DateUtil {
 
     /**
      * 得到当前周的周一
+     *
      * @return
      */
     public static Date getWeekStart(final Date oDate) {
@@ -92,6 +90,7 @@ public final class DateUtil {
 
     /**
      * 得到当前周的周日
+     *
      * @return
      */
     public static Date getWeekEnd(final Date oDate) {
@@ -104,6 +103,7 @@ public final class DateUtil {
 
     /**
      * 得到当前月份月底 格式为：xxxx-yy-zz (eg: 2013-12-31)<br>
+     *
      * @return 当前月份月底 格式的字符串
      */
     public static String getMonthEnd(final Date oDate) {
@@ -138,8 +138,8 @@ public final class DateUtil {
 
     /**
      * 判断输入年份是否为闰年<br>
-     * @param year
-     *            年
+     *
+     * @param year 年
      * @return 是：true 否：false
      */
     public static boolean leapYear(final int year) {
@@ -162,10 +162,9 @@ public final class DateUtil {
 
     /**
      * 日期增加天数，可以是正负值
-     * @param date
-     *            Date
-     * @param nDays
-     *            天数;可以是正负值
+     *
+     * @param date  Date
+     * @param nDays 天数;可以是正负值
      * @return Date
      */
     public static Date addDays(final Date date, final int nDays) {
@@ -177,10 +176,9 @@ public final class DateUtil {
 
     /**
      * 增加小时数，可以是正负值
-     * @param date
-     *            Date
-     * @param nHours
-     *            小时
+     *
+     * @param date   Date
+     * @param nHours 小时
      * @return Date
      */
     public static Date addHours(final Date date, final int nHours) {
@@ -196,10 +194,9 @@ public final class DateUtil {
 
     /**
      * 增加毫秒，可以为正负值
-     * @param date
-     *            Date
-     * @param milliseconds
-     *            毫秒数,可以是正负值
+     *
+     * @param date         Date
+     * @param milliseconds 毫秒数,可以是正负值
      * @return Date
      */
     public static Date addMilliseconds(final Date date, final int milliseconds) {
@@ -215,10 +212,9 @@ public final class DateUtil {
 
     /**
      * 增加分钟，可以为正负值
-     * @param date
-     *            Date
-     * @param minuts
-     *            分钟数可以为正负值
+     *
+     * @param date   Date
+     * @param minuts 分钟数可以为正负值
      * @return Date
      */
     public static Date addMinutes(final Date date, final int minuts) {
@@ -234,10 +230,9 @@ public final class DateUtil {
 
     /**
      * 增加月份，可以是正负值
-     * @param date
-     *            Date
-     * @param nMonths
-     *            月份数;可以是正负值
+     *
+     * @param date    Date
+     * @param nMonths 月份数;可以是正负值
      * @return Date
      */
     public static Date addMonths(final Date date, final int nMonths) {
@@ -253,10 +248,9 @@ public final class DateUtil {
 
     /**
      * 增加秒，可以为正负值
-     * @param date
-     *            Date
-     * @param seconds
-     *            秒数可以为正负值
+     *
+     * @param date    Date
+     * @param seconds 秒数可以为正负值
      * @return Date
      */
     public static Date addSeconds(final Date date, final int seconds) {
@@ -272,10 +266,9 @@ public final class DateUtil {
 
     /**
      * 增加年，可以是正负值
-     * @param date
-     *            Date
-     * @param nYears
-     *            年数;可以是正负值
+     *
+     * @param date   Date
+     * @param nYears 年数;可以是正负值
      * @return Date
      */
     public static Date addYears(final Date date, final int nYears) {
@@ -301,10 +294,9 @@ public final class DateUtil {
 
     /**
      * 日期时间转字符串
-     * @param date
-     *            Date
-     * @param format
-     *            日期时间字符串格式
+     *
+     * @param date   Date
+     * @param format 日期时间字符串格式
      * @return 日期时间字符串
      */
     public static String dateTimeToString(final Date date, final String format) {
@@ -317,8 +309,8 @@ public final class DateUtil {
 
     /**
      * 解析日期
-     * @param sDate
-     *            日期字符串;格式 yyyy-MM-dd 或yyyyMMdd
+     *
+     * @param sDate 日期字符串;格式 yyyy-MM-dd 或yyyyMMdd
      * @return Date
      */
     public static Date parseDate(final String sDate) {
@@ -331,9 +323,9 @@ public final class DateUtil {
 
     /**
      * 返回周几
-     * @param date
-     *            Date
-     * @return 返回周几(0-6)[0代表周日；1代表周一]
+     *
+     * @param date Date
+     * @return 返回周几(0 - 6)[0代表周日；1代表周一]
      */
     public static int getDayOfWeek(final Date date) {
         final Calendar c = Calendar.getInstance();
@@ -343,10 +335,9 @@ public final class DateUtil {
 
     /**
      * 解析日期
-     * @param sDate
-     *            日期字符串
-     * @param format
-     *            格式
+     *
+     * @param sDate  日期字符串
+     * @param format 格式
      * @return Date
      */
     public static Date parseDate(final String sDate, final String format) {
@@ -364,8 +355,8 @@ public final class DateUtil {
 
     /**
      * 日期时间转字符串
-     * @param date
-     *            Date
+     *
+     * @param date Date
      * @return 日期时间字符串(DEFAULT_DATETIME_FORMAT)
      */
     public static String dateTimeToString(final Date date) {
@@ -374,8 +365,8 @@ public final class DateUtil {
 
     /**
      * 日期转字符串
-     * @param date
-     *            Date
+     *
+     * @param date Date
      * @return 日期字符串(DEFAULT_DATE_FORMAT)
      */
     public static String dateToString(final Date date) {
@@ -384,8 +375,8 @@ public final class DateUtil {
 
     /**
      * 日期转字符串
-     * @param date
-     *            Date
+     *
+     * @param date Date
      * @return 日期字符串(DEFAULT_DATE_FORMAT)
      */
     public static String dateToString(final Date date, final String format) {
@@ -394,8 +385,8 @@ public final class DateUtil {
 
     /**
      * 日期转简式字符串yyyyMMdd
-     * @param date
-     *            Date
+     *
+     * @param date Date
      * @return 日期字符串(SIMPLE_DATE_FORMAT)
      */
     public static String dateToSimpleString(final Date date) {
@@ -409,6 +400,7 @@ public final class DateUtil {
 
     /**
      * 返回月中第几天
+     *
      * @param date
      * @return
      */
@@ -420,6 +412,7 @@ public final class DateUtil {
 
     /**
      * 返回年
+     *
      * @param date
      * @return
      */
@@ -431,8 +424,8 @@ public final class DateUtil {
 
     /**
      * 获取日期的月份
-     * @param date
-     *            Date
+     *
+     * @param date Date
      * @return 日期的月份
      */
     public static int getMonth(final Date date) {
@@ -449,12 +442,11 @@ public final class DateUtil {
 
     /**
      * 返回指定日期的周n 返回的值为指定日期所在周几(1-7)
-     * @see DateUtil#getDayOfWeek(Date)
-     * @param oDate
-     *            Date
-     * @param n
-     *            周
+     *
+     * @param oDate Date
+     * @param n     周
      * @return 周N的日期
+     * @see DateUtil#getDayOfWeek(Date)
      */
     public static Date getOneOfWeeks(final Date oDate, final int n) {
         final int nDay = ((n % 7) == 0) ? 7 : n % 7;
@@ -469,16 +461,13 @@ public final class DateUtil {
 
     /**
      * 将指定的日历设置指定的值,修改日期时间对象的时间部分为 00:00:00.0000
-     * @param year
-     *            年
-     * @param month
-     *            月
-     * @param day
-     *            日
+     *
+     * @param year  年
+     * @param month 月
+     * @param day   日
      * @return 设置后的日历
      */
-    public static Date makeDate(final int year, final int month, final int day)
-    {
+    public static Date makeDate(final int year, final int month, final int day) {
         final Calendar c = Calendar.getInstance();
         c.set(Calendar.YEAR, year);
         c.set(Calendar.MONTH, month - 1);
@@ -492,14 +481,11 @@ public final class DateUtil {
 
     /**
      * 制作时间对象(日期部分为 1900.1.1)
-     * @param hour
-     *            时
-     * @param minute
-     *            分
-     * @param second
-     *            秒
-     * @param milliSecond
-     *            毫秒
+     *
+     * @param hour        时
+     * @param minute      分
+     * @param second      秒
+     * @param milliSecond 毫秒
      * @return 根据参数构造成新的日期对象
      */
     public static Date makeTime(final int hour, final int minute, final int second, final int milliSecond) {
@@ -516,10 +502,9 @@ public final class DateUtil {
 
     /**
      * 制作日期时间对象
-     * @param date
-     *            日期
-     * @param time
-     *            日期
+     *
+     * @param date 日期
+     * @param time 日期
      * @return 设置后的日期
      */
     public static Date makeDateTime(final Date date, final Date time) {
@@ -556,6 +541,7 @@ public final class DateUtil {
 
     /**
      * 获得较小的时间
+     *
      * @param date1
      * @param date2
      * @return
@@ -566,6 +552,7 @@ public final class DateUtil {
 
     /**
      * 获得较大的时间
+     *
      * @param date1
      * @param date2
      * @return
@@ -604,7 +591,7 @@ public final class DateUtil {
 
 
     public static LinkedList<Date> getConsecutiveDays(Date startTime,
-            Date endTime) {
+                                                      Date endTime) {
         LinkedList<Date> result = new LinkedList<Date>();
         GregorianCalendar calendar = new GregorianCalendar();
         calendar.setTime(startTime);
@@ -620,6 +607,7 @@ public final class DateUtil {
      * startTime<endTime为正数 startTime>endTime为负数
      * startTime=20120611,endTime=20120612，则diffDays=2
      * startTime=20120612,endTime=20120611，则diffDays=-2
+     *
      * @param startTime
      * @param endTime
      * @return
@@ -630,7 +618,7 @@ public final class DateUtil {
     }
 
     public static int getDiffDays(String strStartDate, String strEndDate,
-            String strFormat) {
+                                  String strFormat) {
         Date startTime = DateUtil.parserDateStr(strStartDate, strFormat);
         Date endTime = DateUtil.parserDateStr(strEndDate, strFormat);
         int flag = 1;
@@ -716,8 +704,8 @@ public final class DateUtil {
 
     /**
      * 根据日期获取日期中的小时数
-     * @param oDate
-     *            日期
+     *
+     * @param oDate 日期
      * @return 小时数
      */
     public static int getHourOfDay(final Date oDate) {

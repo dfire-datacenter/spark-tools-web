@@ -2,6 +2,8 @@ package com.dfire.controller;
 
 import com.dfire.ResolveLogicalPlan;
 import com.dfire.entity.SparkPlanResultEntity;
+import com.dfire.products.bean.SQLResult;
+import com.dfire.products.parse.LineParser;
 import com.dfire.utils.HiveLineageUtils;
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -11,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import scala.Tuple2;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -72,26 +76,39 @@ public class SqlParserController {
     }
 
     @RequestMapping("/hive_parser")
-    public SparkPlanResultEntity hiveParser(@RequestBody String sql) {
-        try {
-            HiveLineageUtils hiveLineageUtils = new HiveLineageUtils();
-            hiveLineageUtils.getLineageInfo(sql);
-            return new SparkPlanResultEntity(
-                    true,
-                    hiveLineageUtils.getInputTable(),
-                    hiveLineageUtils.getOutputTable(),
-                    hiveLineageUtils.getWithTable(),
-                    "");
-        } catch (Exception e) {
-            return new SparkPlanResultEntity(
-                    false,
-                    null,
-                    null,
-                    null,
-                    e.toString()
-            );
+    public List<SparkPlanResultEntity> hiveParser(@RequestBody String sqlAll) {
+        List<SparkPlanResultEntity> list = new ArrayList<>();
+        for (String sql : sqlAll.split("(?<!\\\\);")) {
+            try {
+                HiveLineageUtils hiveLineageUtils = new HiveLineageUtils();
+                hiveLineageUtils.getLineageInfo(sql);
+                list.add(new SparkPlanResultEntity(
+                        true,
+                        hiveLineageUtils.getInputTable(),
+                        hiveLineageUtils.getOutputTable(),
+                        hiveLineageUtils.getWithTable(),
+                        ""));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        return list;
     }
 
+
+    @RequestMapping("/hive_column_parser")
+    public void hiveColumnParser(@RequestBody String sql) {
+        try {
+            LineParser lineParser = new LineParser();
+            List<SQLResult> list = lineParser.parse(sql);
+            for (SQLResult sqlResult : list) {
+                System.out.println("InputTables:" + sqlResult.getInputTables().toString());
+                System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
+                System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

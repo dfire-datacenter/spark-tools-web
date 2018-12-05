@@ -17,9 +17,8 @@
 
 package org.apache.spark.sql.types;
 
-import org.apache.spark.annotation.DeveloperApi;
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.spark.sql.types.UserDefinedType;
+import org.apache.spark.annotation.DeveloperApi;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

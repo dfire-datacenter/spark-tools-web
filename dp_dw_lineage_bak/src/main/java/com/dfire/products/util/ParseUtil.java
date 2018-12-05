@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
 /**
  * 解析工具类
  *
- * @author yangyangthomas
  */
 public final class ParseUtil {
     private static final Map<Integer, String> hardcodeScriptMap     = new HashMap<Integer, String>();
@@ -83,7 +82,7 @@ public final class ParseUtil {
      * 返回多个应该分析的SQL集合，
      * 如： hive -e "sql1;" hive -e "sql2" ,返回 sql1,sql2集合
      *
-     * @param path
+     * @param task
      * @return
      */
     public static List<String> extractSQL(DWTask task) {

@@ -6,21 +6,6 @@
     <artifactId>dw_lineage</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
-    <!-- 	<repositories> -->
-    <!-- 		<repository> -->
-    <!-- 			<id>thirdparty</id> -->
-    <!-- 			<name>thirdparty</name> -->
-    <!-- 			<url>http://114.215.181.9:8080/nexus/content/repositories/thirdparty/</url> -->
-    <!-- 		</repository> -->
-    <!-- 		<repository> -->
-    <!-- 			<id>Neo4j releases</id> -->
-    <!-- 			<url>http://m2.neo4j.org/content/repositories/releases</url> -->
-    <!-- 			<releases> -->
-    <!-- 				<enabled>true</enabled> -->
-    <!-- 				<checksumPolicy>warn</checksumPolicy> -->
-    <!-- 			</releases> -->
-    <!-- 		</repository> -->
-    <!-- 	</repositories> -->
     <properties>
         <jdk.version>1.8</jdk.version>
     </properties>
@@ -40,82 +25,37 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>2.2.0</version>
-            <!-- 			<exclusions> -->
-            <!-- 				<exclusion> -->
-            <!-- 					<groupId>org.codehaus.jackson</groupId> -->
-            <!-- 					<artifactId>jackson-core-asl</artifactId> -->
-            <!-- 				</exclusion> -->
-            <!-- 				<exclusion> -->
-            <!-- 					<groupId>org.codehaus.jackson</groupId> -->
-            <!-- 					<artifactId>jackson-mapper-asl</artifactId> -->
-            <!-- 				</exclusion> -->
-            <!-- 			</exclusions> -->
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-mapreduce-client-core</artifactId>
             <version>2.2.0</version>
-            <!-- 			<exclusions> -->
-            <!-- 				<exclusion> -->
-            <!-- 					<groupId>org.codehaus.jackson</groupId> -->
-            <!-- 					<artifactId>jackson-core-asl</artifactId> -->
-            <!-- 				</exclusion> -->
-            <!-- 				<exclusion> -->
-            <!-- 					<groupId>org.codehaus.jackson</groupId> -->
-            <!-- 					<artifactId>jackson-mapper-asl</artifactId> -->
-            <!-- 				</exclusion> -->
-            <!-- 			</exclusions> -->
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
             <version>2.2.0</version>
-            <!-- 			<exclusions> -->
-            <!-- 				<exclusion> -->
-            <!-- 					<groupId>org.codehaus.jackson</groupId> -->
-            <!-- 					<artifactId>jackson-core-asl</artifactId> -->
-            <!-- 				</exclusion> -->
-            <!-- 				<exclusion> -->
-            <!-- 					<groupId>org.codehaus.jackson</groupId> -->
-            <!-- 					<artifactId>jackson-mapper-asl</artifactId> -->
-            <!-- 				</exclusion> -->
-            <!-- 			</exclusions> -->
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>mysql</groupId>-->
-            <!--<artifactId>mysql-connector-java</artifactId>-->
-            <!--<version>5.1.32</version>-->
-        <!--</dependency>-->
-<!--<dependency>-->
-    <!--<groupId>javax.el</groupId>-->
-    <!--<artifactId>javax.el-api</artifactId>-->
-    <!--<version>2.2.4</version>-->
-<!--</dependency>-->
-<!--<dependency>-->
-    <!--<groupId>org.glassfish.web</groupId>-->
-    <!--<artifactId>javax.el</artifactId>-->
-    <!--<version>2.2.4</version>-->
-<!--</dependency>-->
-<!--<dependency>-->
-    <!--<groupId>org.apache.tomcat</groupId>-->
-    <!--<artifactId>tomcat-el-api</artifactId>-->
-    <!--<version>8.5.24</version>-->
-<!--</dependency>-->
-<!--<dependency>-->
-    <!--<groupId>org.apache.tomcat</groupId>-->
-    <!--<artifactId>tomcat-jasper-el</artifactId>-->
-    <!--<version>8.5.24</version>-->
-<!--</dependency>-->
-        <!-- 		<dependency> -->
-        <!-- 			<groupId>org.neo4j</groupId> -->
-        <!-- 			<artifactId>neo4j-jdbc</artifactId> -->
-        <!-- 			<version>2.1.4</version> -->
-        <!-- 		</dependency> -->
-        <!-- 		<dependency> -->
-        <!-- 			<groupId>javax.mail</groupId> -->
-        <!-- 			<artifactId>mail</artifactId> -->
-        <!-- 			<version>1.4.4</version> -->
-        <!-- 		</dependency> -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.32</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-jdbc</artifactId>
+            <version>1.1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.aggregate</groupId>
+                    <artifactId>jetty-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hive</groupId>
+                    <artifactId>hive-shims</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
 
