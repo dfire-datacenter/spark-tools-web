@@ -34,7 +34,6 @@ import java.util.Map.Entry;
  * 试用范围：
  * 1、支持标准SQL
  * 2、不支持transform using script
- *
  */
 public class LineParser {
 
@@ -675,6 +674,7 @@ public class LineParser {
                     joinClause = true;
                     joinOnStack.push(joinOn);
                     joinOn = ast;
+                default:
                     break;
             }
         }

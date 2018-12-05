@@ -9,7 +9,7 @@ import java.util.Set;
  */
 public class Block {
     private String condition;
-    private Set<String> colSet = new LinkedHashSet<String>();
+    private Set<String> colSet = new LinkedHashSet<>();
 
     public String getCondition() {
         return condition;
