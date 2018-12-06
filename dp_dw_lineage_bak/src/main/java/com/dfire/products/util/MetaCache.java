@@ -19,9 +19,9 @@ public class MetaCache {
     }
 
     private        MetaDataDao                   dao       = new MetaDataDao();
-    private static Map<String, List<ColumnNode>> cMap      = new HashMap<String, List<ColumnNode>>();
-    private static Map<String, Long>             tableMap  = new HashMap<String, Long>();
-    private static Map<String, Long>             columnMap = new HashMap<String, Long>();
+    private static Map<String, List<ColumnNode>> cMap      = new HashMap<>();
+    private static Map<String, Long>             tableMap  = new HashMap<>();
+    private static Map<String, Long>             columnMap = new HashMap<>();
 
     public void init(String table) {
         String[] pdt = ParseUtil.parseDBTable(table);
@@ -43,7 +43,7 @@ public class MetaCache {
 
     public List<String> getColumnByDBAndTable(String table) {
         List<ColumnNode> list = cMap.get(table.toLowerCase());
-        List<String> list2 = new ArrayList<String>();
+        List<String> list2 = new ArrayList<>();
         if (Check.notEmpty(list)) {
             for (ColumnNode columnNode : list) {
                 list2.add(columnNode.getColumn());

@@ -97,19 +97,24 @@ public class LineParser {
     private void parseCurrentNode(ASTNode ast) {
         if (ast.getToken() != null) {
             switch (ast.getToken().getType()) {
-                case HiveParser.TOK_CREATETABLE: //outputtable
+                //outputtable
+                case HiveParser.TOK_CREATETABLE:
                     isCreateTable = true;
                     String tableOut = fillDB(BaseSemanticAnalyzer.getUnescapedName((ASTNode) ast.getChild(0)));
                     outputTables.add(tableOut);
-                    MetaCache.getInstance().init(tableOut); //初始化数据，供以后使用
+                    //初始化数据，供以后使用
+                    MetaCache.getInstance().init(tableOut);
                     break;
-                case HiveParser.TOK_TAB:// outputTable
+                // outputTable
+                case HiveParser.TOK_TAB:
                     String tableTab = BaseSemanticAnalyzer.getUnescapedName((ASTNode) ast.getChild(0));
                     String tableOut2 = fillDB(tableTab);
                     outputTables.add(tableOut2);
-                    MetaCache.getInstance().init(tableOut2); //初始化数据，供以后使用
+                    //初始化数据，供以后使用
+                    MetaCache.getInstance().init(tableOut2);
                     break;
-                case HiveParser.TOK_TABREF:// inputTable
+                // inputTable
+                case HiveParser.TOK_TABREF:
                     ASTNode tabTree = (ASTNode) ast.getChild(0);
                     String tableInFull = fillDB((tabTree.getChildCount() == 1) ?
                             BaseSemanticAnalyzer.getUnescapedName((ASTNode) tabTree.getChild(0))
@@ -118,10 +123,12 @@ public class LineParser {
                     );
                     String tableIn = tableInFull.substring(tableInFull.indexOf(SPLIT_DOT) + 1);
                     inputTables.add(tableInFull);
-                    MetaCache.getInstance().init(tableInFull); //初始化数据，供以后使用
+                    //初始化数据，供以后使用
+                    MetaCache.getInstance().init(tableInFull);
                     queryMap.clear();
                     String alia = null;
-                    if (ast.getChild(1) != null) { //(TOK_TABREF (TOK_TABNAME detail usersequence_client) c)
+                    //(TOK_TABREF (TOK_TABNAME detail usersequence_client) c)
+                    if (ast.getChild(1) != null) {
                         alia = ast.getChild(1).getText().toLowerCase();
                         QueryTree qt = new QueryTree();
                         qt.setCurrent(alia);
@@ -130,8 +137,10 @@ public class LineParser {
                         qt.setpId(pTree.getpId());
                         qt.setParent(pTree.getParent());
                         queryTreeList.add(qt);
-                        if (joinClause && ast.getParent() == joinOn) { // TOK_SUBQUERY join TOK_TABREF ,此处的TOK_SUBQUERY信息不应该清楚
-                            for (QueryTree entry : queryTreeList) { //当前的查询范围
+                        // TOK_SUBQUERY join TOK_TABREF ,此处的TOK_SUBQUERY信息不应该清楚
+                        if (joinClause && ast.getParent() == joinOn) {
+                            //当前的查询范围
+                            for (QueryTree entry : queryTreeList) {
                                 if (qt.getParent().equals(entry.getParent())) {
                                     queryMap.put(entry.getCurrent(), entry);
                                 }
@@ -195,7 +204,8 @@ public class LineParser {
                         }
                     }
                     break;
-                case HiveParser.TOK_SELEXPR: //输入输出字段的处理
+                //输入输出字段的处理
+                case HiveParser.TOK_SELEXPR:
                     /**
                      * (TOK_DESTINATION (TOK_DIR TOK_TMP_FILE))
                      * 	(TOK_SELECT (TOK_SELEXPR TOK_ALLCOLREF))

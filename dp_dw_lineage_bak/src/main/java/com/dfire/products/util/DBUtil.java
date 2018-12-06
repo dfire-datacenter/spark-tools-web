@@ -13,17 +13,18 @@ public class DBUtil {
         META, TASK
     }
 
-    private String     driver;// 驱动
-    private String     url;// url
-    private String     user;// 用户
-    private String     password;//密码
-    private Connection conn;//连接
+    private String     driver;
+    private String     url;
+    private String     user;
+    private String     password;
+    private Connection conn;
 
     public DBUtil(DB_TYPE type) {
         this.driver = "org.apache.hive.jdbc.HiveDriver";
-        this.url = "jdbc:hive2://10.10.18.220:10000,10.10.21.158:10000";
-        this.user = "argus";
-        this.password = "";
+        this.url = "jdbc:hive2://10.10.18.215:10000";
+//        this.url = "jdbc:hive2://10.10.18.220:10000,10.10.21.158:10000";
+        this.user = "import";
+        this.password = "improt";
 //        this.driver = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.driverClassName");
 //        this.url = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.url");
 //        this.user = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.username");

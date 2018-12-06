@@ -10,13 +10,27 @@ import java.util.Set;
  *
  */
 public class QueryTree {
-    private int    id; //当前子查询节点id
-    private int    pId; //父节点子查询树id
+
+    /**
+     * 当前子查询节点id
+     */
+    private int    id;
+
+    /**
+     * 父节点子查询树id
+     */
+    private int    pId;
+
     private String current;
-    private String parent; //只需父节点的名字
-    private Set<String>     tableSet    = new HashSet<String>();
-    private List<QueryTree> childList   = new ArrayList<QueryTree>();
-    private List<ColLine>   colLineList = new ArrayList<ColLine>();
+
+    /**
+     * 只需父节点的名字
+     */
+    private String parent;
+
+    private Set<String>     tableSet    = new HashSet<>();
+    private List<QueryTree> childList   = new ArrayList<>();
+    private List<ColLine>   colLineList = new ArrayList<>();
 
     public int getId() {
         return id;
