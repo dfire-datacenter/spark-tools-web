@@ -7,17 +7,40 @@ import java.util.Set;
 
 /**
  * 生成的列的血缘关系
- *
  */
 public class ColLine {
-    private String toNameParse; // 解析sql出来的列名称
-    private String colCondition; // 带条件的源字段
-    private Set<String> fromNameSet     = new LinkedHashSet<String>(); //源字段
-    private Set<String> conditionSet    = new LinkedHashSet<String>(); //计算条件
-    private Set<String> allConditionSet = new LinkedHashSet<String>();
 
-    private String toTable; // 解析出来输出表
-    private String toName; // 查询元数据出来的列名称
+    /**
+     * 解析sql出来的列名称
+     */
+    private String toNameParse;
+
+    /**
+     * 带条件的源字段
+     */
+    private String colCondition;
+
+    /**
+     * 源字段
+     */
+    private Set<String> fromNameSet = new LinkedHashSet<>();
+
+    /**
+     * 计算条件
+     */
+    private Set<String> conditionSet    = new LinkedHashSet<>();
+
+    private Set<String> allConditionSet = new LinkedHashSet<>();
+
+    /**
+     * 解析出来输出表
+     */
+    private String toTable;
+
+    /**
+     * 查询元数据出来的列名称
+     */
+    private String toName;
 
     private static final String CON_COLFUN = "COLFUN:";
 
@@ -94,7 +117,8 @@ public class ColLine {
 
     private boolean needAdd() {
         if (Check.notEmpty(colCondition)) {
-            if (Check.isEmpty(fromNameSet)) { // 1+1 as num �����
+            //1+1 as sum
+            if (Check.isEmpty(fromNameSet)) {
                 return true;
             }
             String[] split = colCondition.split("&");

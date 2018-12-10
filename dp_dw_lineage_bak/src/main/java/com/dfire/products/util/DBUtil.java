@@ -17,29 +17,57 @@ public class DBUtil {
     private String     url;
     private String     user;
     private String     password;
-    private Connection conn;
+    private Connection mysqlConn;
 
-    public DBUtil(DB_TYPE type) {
-        this.driver = "org.apache.hive.jdbc.HiveDriver";
-        this.url = "jdbc:hive2://10.10.18.215:10000";
-//        this.url = "jdbc:hive2://10.10.18.220:10000,10.10.21.158:10000";
-        this.user = "import";
-        this.password = "improt";
+    private String     sparkDriver;
+    private String     sparkUrl;
+    private String     sparkUser;
+    private String     sparkPassword;
+    private Connection sparkConn;
+
+    public DBUtil() {
+
+        this.sparkDriver = "org.apache.hive.jdbc.HiveDriver";
+        this.sparkUrl = "jdbc:hive2://10.10.18.215:10000";
+        this.sparkUser = "import";
+        this.sparkPassword = "import";
+
+        this.driver = "com.mysql.jdbc.Driver";
+        this.url = "jdbc:mysql://10.1.6.10:3306";
+        this.user = "twodfire";
+        this.password = "123456";
+
 //        this.driver = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.driverClassName");
 //        this.url = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.url");
 //        this.user = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.username");
 //        this.password = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.password");
     }
 
-    private void setConn() {
-        try {
-            Class.forName(driver);
-            this.conn = DriverManager.getConnection(url, user, password);
-        } catch (ClassNotFoundException classnotfoundexception) {
-            classnotfoundexception.printStackTrace();
-            System.err.println("db: " + classnotfoundexception.getMessage());
-        } catch (SQLException sqlexception) {
-            System.err.println("db.getconn(): " + sqlexception.getMessage());
+    private void setMysqlConn() {
+        if (mysqlConn == null) {
+            try {
+                Class.forName(driver);
+                this.mysqlConn = DriverManager.getConnection(url, user, password);
+            } catch (ClassNotFoundException classnotfoundexception) {
+                classnotfoundexception.printStackTrace();
+                System.err.println("db: " + classnotfoundexception.getMessage());
+            } catch (SQLException sqlexception) {
+                System.err.println("db.getconn(): " + sqlexception.getMessage());
+            }
+        }
+    }
+
+    private void setSparkConn() {
+        if (sparkConn == null) {
+            try {
+                Class.forName(sparkDriver);
+                this.sparkConn = DriverManager.getConnection(sparkUrl, sparkUser, sparkPassword);
+            } catch (ClassNotFoundException classnotfoundexception) {
+                classnotfoundexception.printStackTrace();
+                System.err.println("db: " + classnotfoundexception.getMessage());
+            } catch (SQLException sqlexception) {
+                System.err.println("db.getconn(): " + sqlexception.getMessage());
+            }
         }
     }
 
@@ -54,23 +82,24 @@ public class DBUtil {
     public int doUpdate(String sql) throws Exception {
         Statement stmt = null;
         try {
-            setConn();
-            stmt = conn.createStatement();
+            setMysqlConn();
+            stmt = mysqlConn.createStatement();
             return stmt.executeUpdate(sql);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
-        } finally {
-            close(null, stmt);
         }
+//        finally {
+//            close(null, stmt);
+//        }
     }
 
     public List<Map<String, Object>> doSelect(String sql) throws Exception {
         Statement stmt = null;
         ResultSet rs = null;
         try {
-            setConn();
-            stmt = conn.createStatement(
+            setMysqlConn();
+            stmt = mysqlConn.createStatement(
                     java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE,
                     java.sql.ResultSet.CONCUR_READ_ONLY);
             rs = stmt.executeQuery(sql);
@@ -83,9 +112,10 @@ public class DBUtil {
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
-        } finally {
-            close(rs, stmt);
         }
+//        finally {
+//            close(rs, stmt);
+//        }
     }
 
 
@@ -115,14 +145,26 @@ public class DBUtil {
         if (stmt != null) {
             stmt.close();
         }
-        if (conn != null) {
-            conn.close();
+        if (mysqlConn != null) {
+            mysqlConn.close();
         }
+    }
+
+    public void initLineageTable(int tableId, String table, String database) throws Exception {
+        doInsert("insert into data_lineage.data_lineage_table " +
+                "(table_id,table_name,database_name) " +
+                "values('" + tableId + "','" + table + "','" + database + "')");
+    }
+
+    public void initLineageColumn(int tableId, String tableName, int columnId, String columnName) throws Exception {
+        doInsert("insert into data_lineage.data_lineage_column " +
+                "(column_id,column_name,table_id,table_name) " +
+                "values('" + columnId + "','" + columnName + "','" + tableId + "','" + tableName + "')");
     }
 
     public static void main(String[] args) {
         try {
-            DBUtil db = new DBUtil(DB_TYPE.META);
+            DBUtil db = new DBUtil();
             List<Map<String, Object>> rs = db.doSelect("select * from heguozi.dtl_t_cm_od_tp_in_join limit 5");
             for (Map<String, Object> map : rs) {
                 for (Entry<String, Object> entry : map.entrySet()) {

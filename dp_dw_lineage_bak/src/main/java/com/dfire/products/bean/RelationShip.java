@@ -3,10 +3,14 @@ package com.dfire.products.bean;
 import java.util.List;
 import java.util.Map;
 
-public class RealationShip {
-    private long                      node1Id;
-    private long                      node2Id;
-    private String                    lable; //from,hive
+public class RelationShip {
+    private long node1Id;
+    private long node2Id;
+
+    /**
+     * from,hive
+     */
+    private String                    label;
     private Map<String, List<String>> propertyMap;
 
     public long getNode1Id() {
@@ -26,11 +30,11 @@ public class RealationShip {
     }
 
     public String getLable() {
-        return lable;
+        return label;
     }
 
-    public void setLable(String lable) {
-        this.lable = lable;
+    public void setLable(String label) {
+        this.label = label;
     }
 
     public Map<String, List<String>> getPropertyMap() {

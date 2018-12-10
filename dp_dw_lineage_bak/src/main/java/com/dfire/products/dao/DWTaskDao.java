@@ -10,7 +10,7 @@ import com.dfire.products.util.DateUtil;
 import java.util.*;
 
 public class DWTaskDao {
-    DBUtil dbUtil = new DBUtil(DB_TYPE.TASK);
+    DBUtil dbUtil = new DBUtil();
 
     public List<DWTask> getTask(Date date, int startTaskId, List<Integer> taskIdList) {
         StringBuilder where = new StringBuilder();

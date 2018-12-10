@@ -1,0 +1,32 @@
+create database data_lineage;
+
+CREATE TABLE `data_lineage.data_lineage_table` (
+  `table_id` int(10) NOT NULL auto_increment COMMENT '表id',
+  `table_name` varchar(128) NOT NULL COMMENT '表名称',
+  `database_name` varchar(128) NOT NULL COMMENT '库名称',
+  UNIQUE KEY `uid_table_id` (`table_id`),
+  KEY `idx_table_name` (`table_name`),
+  KEY `idx_table_and_database_name` (`table_name`,`database_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment '数据血缘-表信息';
+
+CREATE TABLE `data_lineage.data_lineage_column` (
+  `column_id` int(10) NOT NULL auto_increment COMMENT '字段id',
+  `column_name` varchar(128) NOT NULL COMMENT '字段名称',
+  `table_id` int(10) NOT NULL COMMENT '所在的表id',
+  `table_name` varchar(128) NOT NULL COMMENT '所在的表名称',
+  UNIQUE KEY `uid_column_id` (`column_id`),
+  KEY `idx_column_name` (`column_name`),
+  KEY `idx_table_and_column_name` (`table_name`,`column_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment '数据血缘-字段信息';
+
+CREATE TABLE `data_lineage.data_lineage_relation` (
+  `relation_id` int(10) NOT NULL auto_increment COMMENT '关系id',
+  `column_id` int(10) NOT NULL COMMENT '字段id',
+  `table_id` int(10) NOT NULL COMMENT '所在表id',
+  `from_table_id` int(10) NOT NULL COMMENT '来源表id',
+  `from_column_id` int(10) NOT NULL COMMENT '来源字段id',
+  `condition` text NOT NULL COMMENT '产生该字段的条件',
+  UNIQUE KEY `uid_relation_id` (`relation_id`),
+  KEY `idx_table_and_column_id` (`table_id`,`column_id`),
+  KEY `idx_from_table_and_column_id` (`from_table_id`,`from_column_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment '数据血缘-从业务sql中获取的表和字段的关系信息';

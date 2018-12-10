@@ -2,7 +2,7 @@ package com.dfire.products.parse;
 
 import com.dfire.products.bean.ColLine;
 import com.dfire.products.bean.ColumnNode;
-import com.dfire.products.bean.RealationShip;
+import com.dfire.products.bean.RelationShip;
 import com.dfire.products.bean.TableNode;
 import com.dfire.products.util.Check;
 import com.dfire.products.util.MetaCache;
@@ -13,7 +13,7 @@ import java.util.Map.Entry;
 public class Convertor {
 
     public static List<TableNode> convertToTableNode() {
-        List<TableNode> list = new ArrayList<TableNode>();
+        List<TableNode> list = new ArrayList<>();
         for (Entry<String, List<ColumnNode>> entry : MetaCache.getInstance().getcMap().entrySet()) {
             List<ColumnNode> value = entry.getValue();
             TableNode tn = columnNodeToTableNode(value.get(0));
@@ -24,7 +24,7 @@ public class Convertor {
 
 
     public static Map<Long, List<ColumnNode>> convertToColumnNode() {
-        Map<Long, List<ColumnNode>> map = new HashMap<Long, List<ColumnNode>>();
+        Map<Long, List<ColumnNode>> map = new HashMap<>();
         for (Entry<String, List<ColumnNode>> entry : MetaCache.getInstance().getcMap().entrySet()) {
             List<ColumnNode> list = entry.getValue();
             map.put(list.get(0).getTableId(), list);
@@ -32,11 +32,11 @@ public class Convertor {
         return map;
     }
 
-    public static List<RealationShip> convertTableRS(Set<String> toSet, Set<String> fromSet) {
-        List<RealationShip> rsList = new ArrayList<RealationShip>();
+    public static List<RelationShip> convertTableRS(Set<String> toSet, Set<String> fromSet) {
+        List<RelationShip> rsList = new ArrayList<>();
         for (String ttable : toSet) {
             for (String ftable : fromSet) {
-                RealationShip rs = new RealationShip();
+                RelationShip rs = new RelationShip();
                 rs.setNode1Id(MetaCache.getInstance().getTableMap().get(ttable.toLowerCase()));
                 rs.setNode2Id(MetaCache.getInstance().getTableMap().get(ftable.toLowerCase()));
                 rsList.add(rs);
@@ -46,15 +46,15 @@ public class Convertor {
     }
 
 
-    public static List<RealationShip> convertColumnRS(List<ColLine> clList) {
-        List<RealationShip> rsList = new ArrayList<RealationShip>();
+    public static List<RelationShip> convertColumnRS(List<ColLine> clList) {
+        List<RelationShip> rsList = new ArrayList<>();
         for (ColLine cl : clList) {
             String toName = cl.getToName();
             Set<String> fromNameSet = cl.getFromNameSet();
             Set<String> allConditionSet = cl.getAllConditionSet();
             Map<String, List<String>> propertyMap = generatePropertyMap(allConditionSet);
             for (String fromName : fromNameSet) {
-                RealationShip rs = new RealationShip();
+                RelationShip rs = new RelationShip();
                 rs.setNode1Id(MetaCache.getInstance().getColumnMap().get(toName.toLowerCase()));
                 rs.setNode2Id(MetaCache.getInstance().getColumnMap().get(fromName.toLowerCase()));
                 rs.setPropertyMap(propertyMap);
@@ -67,14 +67,14 @@ public class Convertor {
 
     private static Map<String, List<String>> generatePropertyMap(
             Set<String> allConditionSet) {
-        Map<String, List<String>> propertyMap = new HashMap<String, List<String>>();
+        Map<String, List<String>> propertyMap = new HashMap<>();
         for (String string : allConditionSet) {
             int indexOf = string.indexOf(":");
             if (indexOf > 0) {
                 String key = string.substring(0, indexOf);
                 List<String> list = propertyMap.get(key);
                 if (Check.isEmpty(list)) {
-                    list = new ArrayList<String>();
+                    list = new ArrayList<>();
                     propertyMap.put(key, list);
                 }
                 list.add(string.substring(indexOf + 1));

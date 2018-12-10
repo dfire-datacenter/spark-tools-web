@@ -2,8 +2,10 @@ package com.dfire.controller;
 
 import com.dfire.ResolveLogicalPlan;
 import com.dfire.entity.SparkPlanResultEntity;
+import com.dfire.products.bean.ColLine;
 import com.dfire.products.bean.SQLResult;
 import com.dfire.products.parse.LineParser;
+import com.dfire.products.util.DBUtil;
 import com.dfire.utils.HiveLineageUtils;
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -29,6 +31,8 @@ import java.util.Set;
 public class SqlParserController {
 
     // http://127.0.0.1:8089/sql/spark_parser
+
+    DBUtil dbUtil = new DBUtil();
 
     @RequestMapping("/spark_parser")
     public SparkPlanResultEntity parser(@RequestBody String sql) {
@@ -101,7 +105,37 @@ public class SqlParserController {
         try {
             LineParser lineParser = new LineParser();
             List<SQLResult> list = lineParser.parse(sql);
+            int relationId = 0;
             for (SQLResult sqlResult : list) {
+                Set<String> inputTables = sqlResult.getInputTables();
+                Set<String> outputTables = sqlResult.getOutputTables();
+                List<ColLine> colLineList = sqlResult.getColLineList();
+
+                for (String inputTable : inputTables) {
+//                    String inputDbName = inputTable.split(".")[0];
+//                    String inputTableName = inputTable.split(".")[1];
+                    for (String outputTable : outputTables) {
+//                        String outputDbName = outputTable.split(".")[0];
+//                        String outputTableName = outputTable.split(".")[1];
+                        for (ColLine colLine : colLineList) {
+                            //缓存表和字段这两张表，Map<String,int> 然后通过字段名获取对应字段id
+                            //column_name 如activity_id
+                            colLine.getToNameParse();
+                            //from_column_name db.table.column 如BBB.bbb.activity_id
+                            String[] from = colLine.getColCondition().split(".");
+                            String inputDbName = from[0];
+                            String inputTableName = from[1];
+                            String inputColumnName = from[2];
+                            //condition 直接存
+                            String condition = colLine.getConditionSet().toString();
+                            //++relationId
+                            //insert into data_lineage.data_lineage_relation
+                        }
+                    }
+                }
+
+//                dbUtil.doInsert("");
+
                 System.out.println("InputTables:" + sqlResult.getInputTables().toString());
                 System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
                 System.out.println("ColLineList:" + sqlResult.getColLineList().toString());

@@ -6,7 +6,6 @@ import java.util.Map;
 
 /**
  * 数据检查辅助类
- *
  */
 public final class Check {
 
@@ -229,11 +228,11 @@ public final class Check {
 
     /**
      * 判断Collection是否非空
+     * 为了防止 unchecked 编译警告而专门设置的函数
      *
      * @param collection 集合
      * @return ture集合不为空, false集合为空
      */
-    // 为了防止 unchecked 编译警告而专门设置的函数
     public static boolean notEmpty(final Collection<?> collection) {
         return null != collection && collection.size() > 0;
     }

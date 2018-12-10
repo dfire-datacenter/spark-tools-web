@@ -26,6 +26,7 @@ public class JdbcCypherExecutor implements CypherExecutor {
         }
     }
 
+    @Override
     public Iterator<Map<String, Object>> query(String query, Map<String, Object> params) {
         try {
             final PreparedStatement statement = conn.prepareStatement(query);
@@ -36,6 +37,7 @@ public class JdbcCypherExecutor implements CypherExecutor {
                 boolean hasNext = result.next();
                 public List<String> columns;
 
+                @Override
                 public boolean hasNext() {
                     return hasNext;
                 }
@@ -49,6 +51,7 @@ public class JdbcCypherExecutor implements CypherExecutor {
                     return columns = cols;
                 }
 
+                @Override
                 public Map<String, Object> next() {
                     try {
                         if (hasNext) {
@@ -66,6 +69,7 @@ public class JdbcCypherExecutor implements CypherExecutor {
                     }
                 }
 
+                @Override
                 public void remove() {
                 }
             };
@@ -81,6 +85,7 @@ public class JdbcCypherExecutor implements CypherExecutor {
         }
     }
 
+    @Override
     public int exec(String sql) {
         try {
             final PreparedStatement statement = conn.prepareStatement(sql);
@@ -90,6 +95,7 @@ public class JdbcCypherExecutor implements CypherExecutor {
         }
     }
 
+    @Override
     public int exec(String sql, List<Object> objs) {
         try {
             final PreparedStatement statement = conn.prepareStatement(sql);

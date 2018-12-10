@@ -1,7 +1,7 @@
 package com.dfire.products.dao;
 
 import com.dfire.products.bean.ColumnNode;
-import com.dfire.products.bean.RealationShip;
+import com.dfire.products.bean.RelationShip;
 import com.dfire.products.bean.TableNode;
 import com.dfire.products.executor.CypherExecutor;
 import com.dfire.products.executor.JdbcCypherExecutor;
@@ -41,6 +41,7 @@ public class Neo4jDaoImpl implements Neo4jDao {
         }
     }
 
+    @Override
     public int createTable(TableNode node) {
         String sql = "merge (t:TABLE{tid:{1}}) on create set t.db={2}, t.table={3}";
         List<Object> args = new ArrayList<Object>(3);
@@ -50,6 +51,7 @@ public class Neo4jDaoImpl implements Neo4jDao {
         return cypher.exec(sql, args);
     }
 
+    @Override
     public int createColumn(long tableId, List<ColumnNode> list) {
 
         List<Object> args = new ArrayList<Object>(3);
@@ -67,7 +69,8 @@ public class Neo4jDaoImpl implements Neo4jDao {
         return cypher.exec(sql, args);
     }
 
-    public int createTableRealationShip(RealationShip ship) {
+    @Override
+    public int createTableRelationShip(RelationShip ship) {
         String sql = "match (n:TABLE{tid:{1}}),(m:TABLE{tid:{2}}) " +
                 "create UNIQUE n-[:FROM]->m";
         List<Object> args = new ArrayList<Object>(2);
@@ -76,7 +79,8 @@ public class Neo4jDaoImpl implements Neo4jDao {
         return cypher.exec(sql, args);
     }
 
-    public int createColumnRealationShip(RealationShip ship) {
+    @Override
+    public int createColumnRelationShip(RelationShip ship) {
         StringBuilder sb = new StringBuilder();
         Map<String, List<String>> propertyMap = ship.getPropertyMap();
         List<Object> args = new ArrayList<Object>(2);

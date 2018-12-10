@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 
 public class Validater {
 
-    private Map<String/*table*/, List<String/*column*/>> dbMap = new HashMap<String, List<String>>();
+    private Map<String/*table*/, List<String/*column*/>> dbMap = new HashMap<>();
 
     /**
      * 校验sql信息
@@ -46,7 +46,7 @@ public class Validater {
             }
 
 
-            Map<String, List<ColLine>> map = new HashMap<String, List<ColLine>>();
+            Map<String, List<ColLine>> map = new HashMap<>();
             for (ColLine colLine : colLineList) {
                 List<ColLine> list = map.get(colLine.getToTable());
                 if (Check.isEmpty(list)) {
@@ -65,13 +65,11 @@ public class Validater {
             }
             checkOutputTableInfo(outputTables, map);
         }
-
-
     }
 
 
     private void checkOutputTableInfo(Set<String> outputTables, Map<String, List<ColLine>> map) {
-        Map<String, List<String>> dbMap = new HashMap<String, List<String>>();
+        Map<String, List<String>> dbMap = new HashMap<>();
         for (String table : outputTables) {
             List<String> list = MetaCache.getInstance().getColumnByDBAndTable(table);
             dbMap.put(table, list);
@@ -93,7 +91,6 @@ public class Validater {
     /**
      * 检查输入表的字段的对应关系
      *
-     * @param dbMap
      * @param colLine
      */
     private void checkInputTableInfo(ColLine colLine) {
