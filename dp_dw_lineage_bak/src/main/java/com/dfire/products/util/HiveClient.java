@@ -77,6 +77,11 @@ public class HiveClient implements Closeable {
         private String   partitionKey;
     }
 
+    /**
+     * 统计hive库表字段信息到mysql
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         IMetaStoreClient client;
         List<String> databases = null;
@@ -106,7 +111,6 @@ public class HiveClient implements Closeable {
             e.printStackTrace();
         }
         System.out.println(databases);
-
     }
 
 }

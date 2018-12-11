@@ -7,44 +7,40 @@ import com.dfire.products.executor.CypherExecutor;
 import com.dfire.products.executor.JdbcCypherExecutor;
 import com.dfire.products.util.PropertyFileUtil;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Created by winterhanbing on 2015/8/13.
+ * Neo4j
+ *
+ * @author heguozi
  */
 public class Neo4jDaoImpl implements Neo4jDao {
     private final CypherExecutor cypher;
 
     public Neo4jDaoImpl() {
-        cypher = createCypherExecutor(PropertyFileUtil.getProperty("neo4j.jdbc.url"));
+        cypher = createCypherExecutor(PropertyFileUtil.getProperty("neo4j.jdbc.url"),
+                PropertyFileUtil.getProperty("neo4j.jdbc.user"),
+                PropertyFileUtil.getProperty("neo4j.jdbc.password"));
     }
 
-    public Neo4jDaoImpl(String uri) {
-        cypher = createCypherExecutor(uri);
-    }
-
-    private CypherExecutor createCypherExecutor(String uri) {
+    private CypherExecutor createCypherExecutor(String uri, String user, String password) {
         try {
-            String auth = new URL(uri).getUserInfo();
-            if (auth != null) {
-                String[] parts = auth.split(":");
-                return new JdbcCypherExecutor(uri, parts[0], parts[1]);
+            if (uri != null && user != null && password != null) {
+                return new JdbcCypherExecutor(uri, user, password);
             }
-            return new JdbcCypherExecutor(uri);
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("Invalid Neo4j-ServerURL " + uri);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return new JdbcCypherExecutor(uri);
     }
 
     @Override
     public int createTable(TableNode node) {
         String sql = "merge (t:TABLE{tid:{1}}) on create set t.db={2}, t.table={3}";
-        List<Object> args = new ArrayList<Object>(3);
+        List<Object> args = new ArrayList<>(3);
         args.add(node.getId());
         args.add(node.getDb());
         args.add(node.getTable());
@@ -54,7 +50,7 @@ public class Neo4jDaoImpl implements Neo4jDao {
     @Override
     public int createColumn(long tableId, List<ColumnNode> list) {
 
-        List<Object> args = new ArrayList<Object>(3);
+        List<Object> args = new ArrayList<>(3);
         args.add(tableId);
 
         StringBuilder sb = new StringBuilder();
@@ -111,6 +107,10 @@ public class Neo4jDaoImpl implements Neo4jDao {
                 " on create set " + sb.toString() +
                 " on match set " + sb.toString();
         return cypher.exec(sql, args);
+    }
+
+    public int initExecute(String sql) {
+        return cypher.exec(sql);
     }
 
 }

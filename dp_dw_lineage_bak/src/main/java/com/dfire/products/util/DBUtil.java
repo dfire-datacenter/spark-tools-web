@@ -106,6 +106,7 @@ public class DBUtil {
             List<Map<String, Object>> list = new ArrayList<>();
             while (rs.next()) {
                 Map<String, Object> map = rowToMap(rs, rs.getRow());
+                Map<String,Integer> tableInfo = new HashMap<>();
                 list.add(map);
             }
             return list;
@@ -152,13 +153,13 @@ public class DBUtil {
 
     public void initLineageTable(int tableId, String table, String database) throws Exception {
         doInsert("insert into data_lineage.data_lineage_table " +
-                "(table_id,table_name,database_name) " +
+                "(`table_id`,`table_name`,`database_name`) " +
                 "values('" + tableId + "','" + table + "','" + database + "')");
     }
 
     public void initLineageColumn(int tableId, String tableName, int columnId, String columnName) throws Exception {
         doInsert("insert into data_lineage.data_lineage_column " +
-                "(column_id,column_name,table_id,table_name) " +
+                "(`column_id`,`column_name`,`table_id`,`table_name`) " +
                 "values('" + columnId + "','" + columnName + "','" + tableId + "','" + tableName + "')");
     }
 

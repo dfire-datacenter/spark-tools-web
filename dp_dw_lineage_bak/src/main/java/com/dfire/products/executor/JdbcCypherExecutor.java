@@ -18,7 +18,7 @@ public class JdbcCypherExecutor implements CypherExecutor {
         try {
             String neo4j = "org.neo4j.jdbc.Driver";
             Class.forName(neo4j);
-            conn = DriverManager.getConnection(url.replace("http://", "jdbc:neo4j://"), username, password);
+            conn = DriverManager.getConnection(url, username, password);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
