@@ -7,6 +7,7 @@ import com.dfire.products.executor.CypherExecutor;
 import com.dfire.products.executor.JdbcCypherExecutor;
 import com.dfire.products.util.PropertyFileUtil;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -109,8 +110,12 @@ public class Neo4jDaoImpl implements Neo4jDao {
         return cypher.exec(sql, args);
     }
 
-    public int initExecute(String sql) {
+    public int executeSql(String sql) {
         return cypher.exec(sql);
+    }
+
+    public ResultSet executeQuery(String sql) {
+        return cypher.execQuery(sql);
     }
 
 }

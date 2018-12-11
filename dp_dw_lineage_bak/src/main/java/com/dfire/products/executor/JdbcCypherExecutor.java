@@ -96,6 +96,16 @@ public class JdbcCypherExecutor implements CypherExecutor {
     }
 
     @Override
+    public ResultSet execQuery(String sql) {
+        try {
+            final PreparedStatement statement = conn.prepareStatement(sql);
+            return statement.executeQuery();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public int exec(String sql, List<Object> objs) {
         try {
             final PreparedStatement statement = conn.prepareStatement(sql);
