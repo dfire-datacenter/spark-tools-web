@@ -79,13 +79,11 @@ public class HiveClient implements Closeable {
 
     /**
      * 统计hive库表字段信息到mysql
-     *
-     * @param args
      */
     public static void main(String[] args) {
         IMetaStoreClient client;
         List<String> databases = null;
-        int databasesNum = 0;
+        int databasesNum;
         int tableNum = 0;
         int columnNum = 0;
         long now = System.currentTimeMillis();
