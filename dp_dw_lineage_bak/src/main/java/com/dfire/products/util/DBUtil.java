@@ -1,5 +1,7 @@
 package com.dfire.products.util;
 
+import com.dfire.products.util.pool.MysqlConnectionPool;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,11 +15,10 @@ public class DBUtil {
         META, TASK
     }
 
-    private String     driver;
-    private String     url;
-    private String     user;
-    private String     password;
-    private Connection mysqlConn;
+    private String driver;
+    private String url;
+    private String user;
+    private String password;
 
     private String     sparkDriver;
     private String     sparkUrl;
@@ -25,8 +26,9 @@ public class DBUtil {
     private String     sparkPassword;
     private Connection sparkConn;
 
-    public DBUtil() {
+    MysqlConnectionPool mysqlConnectionPool;
 
+    public DBUtil() throws Exception {
         this.sparkDriver = "org.apache.hive.jdbc.HiveDriver";
         this.sparkUrl = "jdbc:hive2://10.10.18.215:10000";
         this.sparkUser = "import";
@@ -37,25 +39,33 @@ public class DBUtil {
         this.user = "twodfire";
         this.password = "123456";
 
+        mysqlConnectionPool = new MysqlConnectionPool(this.driver,
+                this.url,
+                this.user,
+                this.password);
+
+        mysqlConnectionPool.createPool();
+
+
 //        this.driver = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.driverClassName");
 //        this.url = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.url");
 //        this.user = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.username");
 //        this.password = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.password");
     }
 
-    private void setMysqlConn() {
-        if (mysqlConn == null) {
-            try {
-                Class.forName(driver);
-                this.mysqlConn = DriverManager.getConnection(url, user, password);
-            } catch (ClassNotFoundException classnotfoundexception) {
-                classnotfoundexception.printStackTrace();
-                System.err.println("db: " + classnotfoundexception.getMessage());
-            } catch (SQLException sqlexception) {
-                System.err.println("db.getconn(): " + sqlexception.getMessage());
-            }
-        }
-    }
+//    private void setMysqlConn() {
+//        if (mysqlConn == null) {
+//            try {
+//                Class.forName(driver);
+//                this.mysqlConn = DriverManager.getConnection(url, user, password);
+//            } catch (ClassNotFoundException classnotfoundexception) {
+//                classnotfoundexception.printStackTrace();
+//                System.err.println("db: " + classnotfoundexception.getMessage());
+//            } catch (SQLException sqlexception) {
+//                System.err.println("db.getconn(): " + sqlexception.getMessage());
+//            }
+//        }
+//    }
 
     private void setSparkConn() {
         if (sparkConn == null) {
@@ -80,11 +90,12 @@ public class DBUtil {
     }
 
     public int doUpdate(String sql) throws Exception {
-        Statement stmt = null;
         try {
-            setMysqlConn();
-            stmt = mysqlConn.createStatement();
-            return stmt.executeUpdate(sql);
+            Connection connection = mysqlConnectionPool.getConnection();
+            Statement stmt = connection.createStatement();
+            int res = stmt.executeUpdate(sql);
+            mysqlConnectionPool.returnConnection(connection);
+            return res;
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -95,20 +106,18 @@ public class DBUtil {
     }
 
     public List<Map<String, Object>> doSelect(String sql) throws Exception {
-        Statement stmt = null;
-        ResultSet rs = null;
         try {
-            setMysqlConn();
-            stmt = mysqlConn.createStatement(
+            Connection connection = mysqlConnectionPool.getConnection();
+            Statement stmt = connection.createStatement(
                     java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE,
                     java.sql.ResultSet.CONCUR_READ_ONLY);
-            rs = stmt.executeQuery(sql);
+            ResultSet rs = stmt.executeQuery(sql);
             List<Map<String, Object>> list = new ArrayList<>();
             while (rs.next()) {
                 Map<String, Object> map = rowToMap(rs, rs.getRow());
-                Map<String,Integer> tableInfo = new HashMap<>();
                 list.add(map);
             }
+            mysqlConnectionPool.returnConnection(connection);
             return list;
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,23 +140,12 @@ public class DBUtil {
         return map;
     }
 
-    /**
-     * �ر���ݿ�����ݿ����������ݿ�����
-     *
-     * @Function: Close all the statement and conn int this instance and close
-     * the parameter ResultSet
-     * @Param: ResultSet
-     * @Exception: SQLException, Exception
-     **/
     public void close(ResultSet rs, Statement stmt) throws Exception {
         if (rs != null) {
             rs.close();
         }
         if (stmt != null) {
             stmt.close();
-        }
-        if (mysqlConn != null) {
-            mysqlConn.close();
         }
     }
 

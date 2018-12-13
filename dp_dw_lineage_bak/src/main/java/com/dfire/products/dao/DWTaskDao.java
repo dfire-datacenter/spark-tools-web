@@ -4,13 +4,20 @@ import com.dfire.products.bean.DWTask;
 import com.dfire.products.exception.DBException;
 import com.dfire.products.util.Check;
 import com.dfire.products.util.DBUtil;
-import com.dfire.products.util.DBUtil.DB_TYPE;
 import com.dfire.products.util.DateUtil;
 
 import java.util.*;
 
 public class DWTaskDao {
-    DBUtil dbUtil = new DBUtil();
+    DBUtil dbUtil;
+
+    {
+        try {
+            dbUtil = new DBUtil();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public List<DWTask> getTask(Date date, int startTaskId, List<Integer> taskIdList) {
         StringBuilder where = new StringBuilder();

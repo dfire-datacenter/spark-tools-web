@@ -5,7 +5,6 @@ import com.dfire.products.bean.TableNode;
 import com.dfire.products.exception.DBException;
 import com.dfire.products.util.Check;
 import com.dfire.products.util.DBUtil;
-import com.dfire.products.util.DBUtil.DB_TYPE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,15 @@ import java.util.Map;
  */
 public class MetaDataDao {
 
-    private DBUtil dbUtil = new DBUtil();
+    private DBUtil dbUtil;
+
+    {
+        try {
+            dbUtil = new DBUtil();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * 获取表+字段信息

@@ -15,10 +15,18 @@ import java.util.Map;
 @Data
 public class MysqlMetaCache {
 
-    public         Map<String, Integer> tableInfo   = new HashMap<>(16384);
-    public         Map<Integer, String> tableInfoId = new HashMap<>(16384);
-    public         Map<String, Integer> columnInfo  = new HashMap<>(262144);
-    private static DBUtil               dbUtil      = new DBUtil();
+    public Map<String, Integer> tableInfo   = new HashMap<>(16384);
+    public Map<Integer, String> tableInfoId = new HashMap<>(16384);
+    public Map<String, Integer> columnInfo  = new HashMap<>(262144);
+    private static DBUtil dbUtil;
+
+    static {
+        try {
+            dbUtil = new DBUtil();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public MysqlMetaCache() {
         initCacheInfo();
