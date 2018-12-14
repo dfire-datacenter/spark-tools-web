@@ -76,6 +76,11 @@
             <artifactId>neo4j-jdbc-driver</artifactId>
             <version>3.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.33</version>
+        </dependency>
 
     </dependencies>
 

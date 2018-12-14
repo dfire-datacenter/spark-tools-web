@@ -9,15 +9,8 @@ import com.dfire.products.util.DateUtil;
 import java.util.*;
 
 public class DWTaskDao {
-    DBUtil dbUtil;
 
-    {
-        try {
-            dbUtil = new DBUtil();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    private DBUtil dbUtil = new DBUtil();
 
     public List<DWTask> getTask(Date date, int startTaskId, List<Integer> taskIdList) {
         StringBuilder where = new StringBuilder();
@@ -31,7 +24,7 @@ public class DWTaskDao {
         String sql = " select t.id,t.name,concat(t.appPath,'/',t.mainClazz) as path,u.name as user,u.mail " +
                 " from task t join user u on t.userId=u.id " + where.toString()
                 + " order by t.id";
-        List<DWTask> colList = new ArrayList<DWTask>();
+        List<DWTask> colList = new ArrayList<>();
         try {
             List<Map<String, Object>> rs = dbUtil.doSelect(sql);
             for (Map<String, Object> map : rs) {
@@ -51,6 +44,12 @@ public class DWTaskDao {
         } catch (Exception e) {
             e.printStackTrace();
             throw new DBException(e);
+        } finally {
+            try {
+                dbUtil.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

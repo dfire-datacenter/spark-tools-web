@@ -6,8 +6,10 @@ import com.dfire.products.bean.TableNode;
 import com.dfire.products.executor.CypherExecutor;
 import com.dfire.products.executor.JdbcCypherExecutor;
 import com.dfire.products.util.PropertyFileUtil;
+import com.dfire.products.util.pool.MysqlConnectionPool;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,8 @@ import java.util.Map.Entry;
  */
 public class Neo4jDaoImpl implements Neo4jDao {
     private final CypherExecutor cypher;
+
+    private MysqlConnectionPool neo4jConnectionPool;
 
     public Neo4jDaoImpl() {
         cypher = createCypherExecutor(PropertyFileUtil.getProperty("neo4j.jdbc.url"),
@@ -40,6 +44,12 @@ public class Neo4jDaoImpl implements Neo4jDao {
 
     @Override
     public int createTable(TableNode node) {
+        if (neo4jConnectionPool == null) {
+            neo4jConnectionPool = new MysqlConnectionPool(PropertyFileUtil.getProperty("neo4j.jdbc.driver")
+                    , PropertyFileUtil.getProperty("neo4j.jdbc.url"),
+                    PropertyFileUtil.getProperty("neo4j.jdbc.user"),
+                    PropertyFileUtil.getProperty("neo4j.jdbc.password"));
+        }
         String sql = "merge (t:TABLE{tid:{1}}) on create set t.db={2}, t.table={3}";
         List<Object> args = new ArrayList<>(3);
         args.add(node.getId());
@@ -116,6 +126,16 @@ public class Neo4jDaoImpl implements Neo4jDao {
 
     public ResultSet executeQuery(String sql) {
         return cypher.execQuery(sql);
+    }
+
+    public void close() {
+        if (neo4jConnectionPool != null) {
+            try {
+                neo4jConnectionPool.closeConnectionPool();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 }

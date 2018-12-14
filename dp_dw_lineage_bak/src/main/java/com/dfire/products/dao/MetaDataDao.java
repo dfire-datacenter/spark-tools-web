@@ -17,15 +17,7 @@ import java.util.Map;
  */
 public class MetaDataDao {
 
-    private DBUtil dbUtil;
-
-    {
-        try {
-            dbUtil = new DBUtil();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    private DBUtil dbUtil = new DBUtil();
 
     /**
      * 获取表+字段信息
@@ -71,6 +63,12 @@ public class MetaDataDao {
         } catch (Exception e) {
             e.printStackTrace();
             throw new DBException(sqlWhere, e);
+        } finally {
+            try {
+                dbUtil.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

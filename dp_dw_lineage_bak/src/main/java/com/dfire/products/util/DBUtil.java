@@ -11,10 +11,6 @@ import java.util.Map.Entry;
 
 public class DBUtil {
 
-    public enum DB_TYPE {
-        META, TASK
-    }
-
     private String driver;
     private String url;
     private String user;
@@ -26,9 +22,18 @@ public class DBUtil {
     private String     sparkPassword;
     private Connection sparkConn;
 
-    MysqlConnectionPool mysqlConnectionPool;
+    /**
+     * data_lineage
+     */
+    private MysqlConnectionPool mysqlConnectionPool;
 
-    public DBUtil() throws Exception {
+    /**
+     * heraDb
+     */
+    private MysqlConnectionPool heraConnectionPool;
+
+
+    public DBUtil() {
         this.sparkDriver = "org.apache.hive.jdbc.HiveDriver";
         this.sparkUrl = "jdbc:hive2://10.10.18.215:10000";
         this.sparkUser = "import";
@@ -39,33 +44,44 @@ public class DBUtil {
         this.user = "twodfire";
         this.password = "123456";
 
-        mysqlConnectionPool = new MysqlConnectionPool(this.driver,
-                this.url,
-                this.user,
-                this.password);
-
-        mysqlConnectionPool.createPool();
-
-
 //        this.driver = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.driverClassName");
 //        this.url = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.url");
 //        this.user = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.username");
 //        this.password = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.password");
     }
 
-//    private void setMysqlConn() {
-//        if (mysqlConn == null) {
-//            try {
-//                Class.forName(driver);
-//                this.mysqlConn = DriverManager.getConnection(url, user, password);
-//            } catch (ClassNotFoundException classnotfoundexception) {
-//                classnotfoundexception.printStackTrace();
-//                System.err.println("db: " + classnotfoundexception.getMessage());
-//            } catch (SQLException sqlexception) {
-//                System.err.println("db.getconn(): " + sqlexception.getMessage());
-//            }
-//        }
-//    }
+    private void initHeraConnection() {
+        if (heraConnectionPool == null) {
+            try {
+                heraConnectionPool = new MysqlConnectionPool(this.driver,
+                        "jdbc:mysql://rdsdb1101.my.2dfire-inc.com:3306",
+                        "lineage",
+                        "lineage@552208");
+                heraConnectionPool.createPool();
+            } catch (ClassNotFoundException classnotfoundexception) {
+                classnotfoundexception.printStackTrace();
+                System.err.println("db: " + classnotfoundexception.getMessage());
+            } catch (SQLException sqlexception) {
+                System.err.println("db.getconn(): " + sqlexception.getMessage());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void initMysqlConnection() {
+        if (mysqlConnectionPool == null) {
+            try {
+                mysqlConnectionPool = new MysqlConnectionPool(this.driver,
+                        this.url,
+                        this.user,
+                        this.password);
+                mysqlConnectionPool.createPool();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     private void setSparkConn() {
         if (sparkConn == null) {
@@ -91,6 +107,7 @@ public class DBUtil {
 
     public int doUpdate(String sql) throws Exception {
         try {
+            initMysqlConnection();
             Connection connection = mysqlConnectionPool.getConnection();
             Statement stmt = connection.createStatement();
             int res = stmt.executeUpdate(sql);
@@ -107,6 +124,7 @@ public class DBUtil {
 
     public List<Map<String, Object>> doSelect(String sql) throws Exception {
         try {
+            initMysqlConnection();
             Connection connection = mysqlConnectionPool.getConnection();
             Statement stmt = connection.createStatement(
                     java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -123,9 +141,27 @@ public class DBUtil {
             e.printStackTrace();
             throw e;
         }
-//        finally {
-//            close(rs, stmt);
-//        }
+    }
+
+    public List<Map<String, Object>> doSelectFromHera(String sql) throws Exception {
+        try {
+            initHeraConnection();
+            Connection connection = heraConnectionPool.getConnection();
+            Statement stmt = connection.createStatement(
+                    java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    java.sql.ResultSet.CONCUR_READ_ONLY);
+            ResultSet rs = stmt.executeQuery(sql);
+            List<Map<String, Object>> list = new ArrayList<>();
+            while (rs.next()) {
+                Map<String, Object> map = rowToMap(rs, rs.getRow());
+                list.add(map);
+            }
+            heraConnectionPool.returnConnection(connection);
+            return list;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 
@@ -140,12 +176,12 @@ public class DBUtil {
         return map;
     }
 
-    public void close(ResultSet rs, Statement stmt) throws Exception {
-        if (rs != null) {
-            rs.close();
+    public void close() throws Exception {
+        if (mysqlConnectionPool != null) {
+            mysqlConnectionPool.closeConnectionPool();
         }
-        if (stmt != null) {
-            stmt.close();
+        if (heraConnectionPool != null) {
+            heraConnectionPool.closeConnectionPool();
         }
     }
 
@@ -171,6 +207,7 @@ public class DBUtil {
                 }
                 System.out.println("");
             }
+            db.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

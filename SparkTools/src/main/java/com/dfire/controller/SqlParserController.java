@@ -6,9 +6,7 @@ import com.dfire.products.bean.ColLine;
 import com.dfire.products.bean.SQLResult;
 import com.dfire.products.dao.Neo4jDaoImpl;
 import com.dfire.products.parse.LineParser;
-import com.dfire.products.util.DBUtil;
-import com.dfire.products.util.MysqlMetaCache;
-import com.dfire.products.util.Neo4jUtil;
+import com.dfire.products.util.*;
 import com.dfire.utils.HiveLineageUtils;
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -32,9 +30,9 @@ public class SqlParserController {
 
     // http://127.0.0.1:8089/sql/spark_parser
 
-    private DBUtil dbUtil = new DBUtil();
-
+    private DBUtil         dbUtil         = new DBUtil();
     private MysqlMetaCache mysqlMetaCache = new MysqlMetaCache();
+    private List<HeraJobEntity> heraJobList;
 
     @RequestMapping("/spark_parser")
     public SparkPlanResultEntity parser(@RequestBody String sql) {
@@ -101,129 +99,157 @@ public class SqlParserController {
         return list;
     }
 
+    /**
+     * 扫描hive 库表字段信息 存入mysql
+     */
+    @RequestMapping("/initMetaInfoToMysql")
+    public String initMetaInfoToMysql() {
+        long start = System.currentTimeMillis();
+        HiveClient.initMetaInfoToMysql();
+        return "Successfully init MetaInfo to Mysql!\n" + "Time cost:" + (System.currentTimeMillis() - start) + "ms";
+    }
 
     /**
-     * 解析sql 并将得到的node存入mysql
+     * 扫描hera hive spark任务 存入mysql
      */
-    @RequestMapping("/hive_column_parser")
-    public void hiveColumnParser(@RequestBody String sql) throws Exception {
+    @RequestMapping("/initHeraInfo")
+    public String initHeraInfo() {
+        long start = System.currentTimeMillis();
+        heraJobList = HeraUtil.getHeraJobList();
+        return "Successfully init Hera scripts!\n" + "Time cost:" + (System.currentTimeMillis() - start) + "ms";
+    }
+
+    /**
+     * 解析hera sql 并将得到的node&relation存入neo4j和mysql
+     */
+    @RequestMapping("/initGraph")
+    public String initGraph(@RequestBody Integer parseNum) throws Exception {
         long startParser = System.currentTimeMillis();
         Map<String, Integer> tableInfo = mysqlMetaCache.getTableInfo();
         Map<String, Integer> columnInfo = mysqlMetaCache.getColumnInfo();
+        Neo4jUtil neo4jUtil = new Neo4jUtil();
         LineParser lineParser = new LineParser();
-        List<SQLResult> list = lineParser.parse(sql);
-        int relationId = 0;
-        String baseSql = "insert into data_lineage.data_lineage_relation " +
-                "(`relation_id`,`column_id`,`table_id`,`from_table_id`,`from_column_id`,`condition`) values ";
-        for (SQLResult sqlResult : list) {
-            String appendSql = "";
-            Set<String> inputTables = sqlResult.getInputTables();
-            Set<String> outputTables = sqlResult.getOutputTables();
-            List<ColLine> colLineList = sqlResult.getColLineList();
-            for (String inputTable : inputTables) {
-                for (String outputTable : outputTables) {
-                    for (ColLine colLine : colLineList) {
-                        //缓存表和字段这两张表，Map<String,int> 然后通过字段名获取对应字段id
-                        //column_name 如activity_id
-                        String outputColumnName = colLine.getToNameParse();
-                        String outputDbTableName = colLine.getToTable();
-                        String outputDbName = outputDbTableName.split("\\.")[0];
-                        String outputTableName = outputDbTableName.split("\\.")[1];
-                        int outputColumnId = columnInfo.get(outputDbTableName + "." + outputColumnName);
-                        int outputTableId = tableInfo.get(outputDbTableName);
-                        //from_column_name db.table.column 如BBB.bbb.activity_id
-                        String[] fromArray = colLine.getColCondition().split("&");
-                        boolean check = false;
-                        for (String tmp : fromArray) {
-                            String[] from = tmp.split("\\.");
-                            if (from.length == 3) {
-                                //处理Mysql逻辑
-                                check = true;
-                                String inputDbName = from[0];
-                                String inputTableName = from[1];
-                                String inputColumnName = from[2];
-                                int inputColumnId = columnInfo.get(tmp);
-                                int inputTableId = tableInfo.get(inputDbName + "." + inputTableName);
-                                //condition 将'\''转化为~存，不然sql报错
-                                String condition = colLine.getConditionSet().toString().replace('\'', '~');
-                                //++relationId
-                                //insert into data_lineage.data_lineage_relation
-                                appendSql += "('" + (++relationId) + "','" + outputColumnId + "','"
-                                        + outputTableId + "','" + inputTableId + "','"
-                                        + inputColumnId + "','" + condition + "')";
-                                if (relationId % 10 == 0) {
-                                    dbUtil.doInsert(baseSql + appendSql);
-                                    appendSql = "";
-                                } else {
-                                    appendSql += ",\n";
-                                }
+        if (heraJobList == null) {
+            return "Please initMetaInfoToMysql and initHeraInfo first!";
+        } else {
+            for (HeraJobEntity heraJobEntity : heraJobList) {
+                List<SQLResult> list = lineParser.parse(heraJobEntity.getScript());
+                int relationId = 0;
+                String baseSql = "insert into data_lineage.data_lineage_relation " +
+                        "(`relation_id`,`column_id`,`table_id`,`from_table_id`,`from_column_id`,`condition`) values ";
+                for (SQLResult sqlResult : list) {
+                    String appendSql = "";
+                    Set<String> inputTables = sqlResult.getInputTables();
+                    Set<String> outputTables = sqlResult.getOutputTables();
+                    List<ColLine> colLineList = sqlResult.getColLineList();
+                    for (String inputTable : inputTables) {
+                        for (String outputTable : outputTables) {
+                            for (ColLine colLine : colLineList) {
+                                //缓存表和字段这两张表，Map<String,int> 然后通过字段名获取对应字段id
+                                //column_name 如activity_id
+                                String outputColumnName = colLine.getToNameParse();
+                                String outputDbTableName = colLine.getToTable();
+                                String outputDbName = outputDbTableName.split("\\.")[0];
+                                String outputTableName = outputDbTableName.split("\\.")[1];
+                                int outputColumnId = columnInfo.get(outputDbTableName + "." + outputColumnName);
+                                int outputTableId = tableInfo.get(outputDbTableName);
+                                //from_column_name db.table.column 如BBB.bbb.activity_id
+                                String[] fromArray = colLine.getColCondition().split("&");
+                                boolean check = false;
+                                for (String tmp : fromArray) {
+                                    String[] from = tmp.split("\\.");
+                                    if (from.length == 3) {
+                                        //处理Mysql逻辑
+                                        check = true;
+                                        String inputDbName = from[0];
+                                        String inputTableName = from[1];
+                                        String inputColumnName = from[2];
+                                        int inputColumnId = columnInfo.get(tmp);
+                                        int inputTableId = tableInfo.get(inputDbName + "." + inputTableName);
+                                        //condition 将'\''转化为~存，不然sql报错
+                                        String condition = colLine.getConditionSet().toString().replace('\'', '~');
+                                        //++relationId
+                                        //insert into data_lineage.data_lineage_relation
+                                        appendSql += "('" + (++relationId) + "','" + outputColumnId + "','"
+                                                + outputTableId + "','" + inputTableId + "','"
+                                                + inputColumnId + "','" + condition + "')";
+                                        if (relationId % 10 == 0) {
+                                            dbUtil.doInsert(baseSql + appendSql);
+                                            appendSql = "";
+                                        } else {
+                                            appendSql += ",\n";
+                                        }
 
-                                //处理Neo4j逻辑
-                                Neo4jUtil neo4jUtil = new Neo4jUtil();
-                                long startTable = System.currentTimeMillis();
-                                //neo4j处理table之间血缘
-                                if (!neo4jUtil.neo4jCheckTableNodeExist(inputDbName, inputTableName)) {
-                                    if (!neo4jUtil.neo4jCreateTableNode(inputDbName, inputTableName)) {
-                                        throw new Exception("Create neo4j table node error!");
-                                    }
-                                }
-                                if (!neo4jUtil.neo4jCheckTableNodeExist(outputDbName, outputTableName)) {
-                                    if (!neo4jUtil.neo4jCreateTableNode(outputDbName, outputTableName)) {
-                                        throw new Exception("Create neo4j table node error!");
-                                    }
-                                }
-                                if (!neo4jUtil.neo4jCheckTableRelationExist(inputDbName, inputTableName,
-                                        outputDbName, outputTableName)) {
-                                    if (!neo4jUtil.neo4jCreateTableRelation(inputDbName, inputTableName,
-                                            outputDbName, outputTableName)) {
-                                        throw new Exception("Create neo4j table relation error!");
-                                    }
-                                }
-                                System.out.println("deal neo4j table :" + (System.currentTimeMillis() - startTable) + "ms");
+                                        //处理Neo4j逻辑
+                                        long startTable = System.currentTimeMillis();
+                                        //neo4j处理table之间血缘
+                                        if (!neo4jUtil.neo4jCheckTableNodeExist(inputDbName, inputTableName)) {
+                                            if (!neo4jUtil.neo4jCreateTableNode(inputDbName, inputTableName)) {
+                                                throw new Exception("Create neo4j table node error!");
+                                            }
+                                        }
+                                        if (!neo4jUtil.neo4jCheckTableNodeExist(outputDbName, outputTableName)) {
+                                            if (!neo4jUtil.neo4jCreateTableNode(outputDbName, outputTableName)) {
+                                                throw new Exception("Create neo4j table node error!");
+                                            }
+                                        }
+                                        if (!neo4jUtil.neo4jCheckTableRelationExist(inputDbName, inputTableName,
+                                                outputDbName, outputTableName)) {
+                                            if (!neo4jUtil.neo4jCreateTableRelation(inputDbName, inputTableName,
+                                                    outputDbName, outputTableName)) {
+                                                throw new Exception("Create neo4j table relation error!");
+                                            }
+                                        }
+                                        System.out.println("deal neo4j table :" + (System.currentTimeMillis() - startTable) + "ms");
 
-                                //neo4j处理columns之间血缘
-                                long startColumn = System.currentTimeMillis();
-                                if (!neo4jUtil.neo4jCheckColumnNodeExist(inputDbName, inputTableName, inputColumnName)) {
-                                    if (!neo4jUtil.neo4jCreateColumnNode(inputDbName, inputTableName, inputColumnName)) {
-                                        throw new Exception("Create neo4j column node error!");
-                                    }
-                                }
-                                if (!neo4jUtil.neo4jCheckColumnNodeExist(outputDbName, outputTableName, outputColumnName)) {
-                                    if (!neo4jUtil.neo4jCreateColumnNode(outputDbName, outputTableName, outputColumnName)) {
-                                        throw new Exception("Create neo4j column node error!");
-                                    }
-                                }
-                                if (!neo4jUtil.neo4jCheckColumnRelationExist(inputDbName, inputTableName,
-                                        inputColumnName, outputDbName,
-                                        outputTableName, outputColumnName)) {
-                                    if (!neo4jUtil.neo4jCreateColumnRelation(inputDbName, inputTableName,
-                                            inputColumnName, outputDbName,
-                                            outputTableName, outputColumnName)) {
-                                        throw new Exception("Create neo4j column relation error!");
-                                    }
-                                }
-                                System.out.println("deal neo4j column :" + (System.currentTimeMillis() - startColumn) + "ms");
+                                        //neo4j处理columns之间血缘
+                                        long startColumn = System.currentTimeMillis();
+                                        if (!neo4jUtil.neo4jCheckColumnNodeExist(inputDbName, inputTableName, inputColumnName)) {
+                                            if (!neo4jUtil.neo4jCreateColumnNode(inputDbName, inputTableName, inputColumnName)) {
+                                                throw new Exception("Create neo4j column node error!");
+                                            }
+                                        }
+                                        if (!neo4jUtil.neo4jCheckColumnNodeExist(outputDbName, outputTableName, outputColumnName)) {
+                                            if (!neo4jUtil.neo4jCreateColumnNode(outputDbName, outputTableName, outputColumnName)) {
+                                                throw new Exception("Create neo4j column node error!");
+                                            }
+                                        }
+                                        if (!neo4jUtil.neo4jCheckColumnRelationExist(inputDbName, inputTableName,
+                                                inputColumnName, outputDbName,
+                                                outputTableName, outputColumnName)) {
+                                            if (!neo4jUtil.neo4jCreateColumnRelation(inputDbName, inputTableName,
+                                                    inputColumnName, outputDbName,
+                                                    outputTableName, outputColumnName)) {
+                                                throw new Exception("Create neo4j column relation error!");
+                                            }
+                                        }
+                                        System.out.println("deal neo4j column :" + (System.currentTimeMillis() - startColumn) + "ms");
 
-                                //TODO neo4j处理jobs之间的血缘
+                                        //TODO neo4j处理jobs之间的血缘
 
+                                    }
+                                }
+                                if (!check) {
+                                    System.out.println("WARN!! No full input information parsed.");
+                                }
                             }
                         }
-                        if (!check) {
-                            System.out.println("WARN!! No full input information parsed.");
+                        //插入未满一批的部分
+                        if (!"".equals(appendSql)) {
+                            dbUtil.doInsert(baseSql + appendSql.substring(0, appendSql.length() - 2));
+                            appendSql = "";
                         }
                     }
-                }
-                //插入未满一批的部分
-                if (!"".equals(appendSql)) {
-                    dbUtil.doInsert(baseSql + appendSql.substring(0, appendSql.length() - 2));
-                    appendSql = "";
+                    System.out.println("InputTables:" + sqlResult.getInputTables().toString());
+                    System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
+                    System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
                 }
             }
-            System.out.println("InputTables:" + sqlResult.getInputTables().toString());
-            System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
-            System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
         }
+        dbUtil.close();
+        neo4jUtil.close();
         System.out.println("Parser time used:" + (System.currentTimeMillis() - startParser) + "ms");
+        return "Graph and relations have been successfully inited!";
     }
 
     @RequestMapping("/neo4j")

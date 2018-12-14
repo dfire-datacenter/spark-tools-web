@@ -154,4 +154,7 @@ public class Neo4jUtil {
         throw new Exception("Create neo4j column relation error!");
     }
 
+    public void close() {
+        neo4jDao.close();
+    }
 }

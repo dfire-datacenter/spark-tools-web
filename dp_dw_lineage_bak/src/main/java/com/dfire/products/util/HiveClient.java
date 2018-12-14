@@ -31,24 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HiveClient implements Closeable {
 
-//    private static final String META_STORE_URIS = "thrift://hadoop1008.daily.2dfire.info:9083";
-
-    private static final String META_STORE_URIS = "thrift://hadoop1160.prod.2dfire.info:9083,thrift://hadoop1161.prod.2dfire.info:9083";
+    private static final String META_STORE_URIS = PropertyFileUtil.getProperty("hive.metastore.uris");
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveClient.class);
 
     private static IMetaStoreClient msc;
 
-
-    private static DBUtil dbUtil;
-
-    static {
-        try {
-            dbUtil = new DBUtil();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    private static DBUtil dbUtil = new DBUtil();
 
     public static LinkedBlockingQueue<IMetaStoreClient> clientPool = new LinkedBlockingQueue<>(10);
 
@@ -114,7 +103,8 @@ public class HiveClient implements Closeable {
     /**
      * 统计hive库表字段信息到mysql
      */
-    public static void main(String[] args) {
+//    public static void main(String[] args) {
+    public static void initMetaInfoToMysql() {
         initClientPool();
         List<String> databases = null;
         int databasesNum;
@@ -152,15 +142,15 @@ public class HiveClient implements Closeable {
                     tmpClient.close();
                 }
             }
+            dbUtil.close();
             System.out.println("Time Used:" + (System.currentTimeMillis() - now) / 1000.0 + "s");
             System.out.println("databasesNum:" + databasesNum + " tableNum:" + tableNum + " columnNum:" + columnNum);
-        } catch (
-                Exception e)
-
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         System.out.println(databases);
     }
+
+
 }
 
