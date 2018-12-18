@@ -26,7 +26,7 @@
         <dependency>
             <groupId>com.dfire</groupId>
             <artifactId>SparkTools_Scala</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>com.dfire.products</groupId>
@@ -368,15 +368,15 @@
                         <exclude>lib/*</exclude>
                     </excludes>
                 </configuration>
-                <!--<executions>-->
-                <!--<execution>-->
-                <!--<id>attach-test-jar</id>-->
-                <!--<phase>package</phase>-->
-                <!--<goals>-->
-                <!--<goal>test-jar</goal>-->
-                <!--</goals>-->
-                <!--</execution>-->
-                <!--</executions>-->
+                <executions>
+                    <execution>
+                        <id>attach-test-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

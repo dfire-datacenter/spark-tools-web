@@ -129,7 +129,10 @@ public class SqlParserController {
             System.out.println("Please initMetaInfoToMysql and initHeraInfo first!");
             return "Please initMetaInfoToMysql and initHeraInfo first!";
         } else {
+            System.out.println("HeraJobToTalNum:" + heraJobList.size());
+            AtomicInteger number = new AtomicInteger(0);
             for (HeraJobEntity heraJobEntity : heraJobList) {
+                System.out.println("HeraJob No:" + number.incrementAndGet());
                 List<SQLResult> list = lineParser.parse(heraJobEntity.getScript());
                 AtomicInteger relationId = new AtomicInteger(0);
                 String baseSql = "insert into data_lineage.data_lineage_relation " +
@@ -216,7 +219,7 @@ public class SqlParserController {
                                                     throw new Exception("Create neo4j table relation error!");
                                                 }
                                             }
-                                            System.out.println("deal neo4j table :" + (System.currentTimeMillis() - startTable) + "ms");
+//                                            System.out.println("deal neo4j table :" + (System.currentTimeMillis() - startTable) + "ms");
 
                                             //neo4j处理columns之间血缘
                                             long startColumn = System.currentTimeMillis();
@@ -239,7 +242,7 @@ public class SqlParserController {
                                                     throw new Exception("Create neo4j column relation error!");
                                                 }
                                             }
-                                            System.out.println("deal neo4j column :" + (System.currentTimeMillis() - startColumn) + "ms");
+//                                            System.out.println("deal neo4j column :" + (System.currentTimeMillis() - startColumn) + "ms");
 
                                             //TODO neo4j处理jobs之间的血缘
 
@@ -254,9 +257,9 @@ public class SqlParserController {
                             appendSql = "";
                         }
                     }
-                    System.out.println("InputTables:" + sqlResult.getInputTables().toString());
-                    System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
-                    System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
+//                    System.out.println("InputTables:" + sqlResult.getInputTables().toString());
+//                    System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
+//                    System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
                 }
             }
         }

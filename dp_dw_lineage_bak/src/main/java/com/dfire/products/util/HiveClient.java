@@ -151,7 +151,7 @@ public class HiveClient implements Closeable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println(databases);
+//        System.out.println(databases);
     }
 
 

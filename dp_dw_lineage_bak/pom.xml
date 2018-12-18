@@ -110,4 +110,10 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <url>http://nexus.2dfire-dev.com/repository/releases/</url>
+        </repository>
+    </distributionManagement>
 </project>
