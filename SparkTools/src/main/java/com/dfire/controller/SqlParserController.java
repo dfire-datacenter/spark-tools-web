@@ -121,6 +121,7 @@ public class SqlParserController {
     @RequestMapping("/initGraph")
     public String initGraph(@RequestBody Integer parseNum) throws Exception {
         long startParser = System.currentTimeMillis();
+        List<Long> problemJobList = new ArrayList<>();
         Map<String, Long> tableInfo = mysqlMetaCache.getTableInfo();
         Map<String, Long> columnInfo = mysqlMetaCache.getColumnInfo();
         Neo4jUtil neo4jUtil = new Neo4jUtil();
@@ -133,138 +134,148 @@ public class SqlParserController {
             AtomicInteger number = new AtomicInteger(0);
             for (HeraJobEntity heraJobEntity : heraJobList) {
                 System.out.println("HeraJob No:" + number.incrementAndGet());
-                List<SQLResult> list = lineParser.parse(heraJobEntity.getScript());
-                AtomicInteger relationId = new AtomicInteger(0);
-                String baseSql = "insert into data_lineage.data_lineage_relation " +
-                        "(`relation_id`,`column_id`,`table_id`,`from_table_id`,`from_column_id`,`condition`) values ";
-                for (SQLResult sqlResult : list) {
-                    String appendSql = "";
-                    Set<String> inputTables = sqlResult.getInputTables();
-                    Set<String> outputTables = sqlResult.getOutputTables();
-                    List<ColLine> colLineList = sqlResult.getColLineList();
-                    for (String inputTable : inputTables) {
-                        for (String outputTable : outputTables) {
-                            for (ColLine colLine : colLineList) {
-                                //缓存表和字段这两张表，Map<String,int> 然后通过字段名获取对应字段id
-                                //column_name 如activity_id
-                                String outputColumnName = colLine.getToNameParse();
-                                String outputDbTableName = colLine.getToTable();
-                                String outputDbName = outputDbTableName.split("\\.")[0];
-                                String outputTableName = outputDbTableName.split("\\.")[1];
-                                long outputColumnId;
-                                long outputTableId;
-                                try {
-                                    outputColumnId = columnInfo.get(outputDbTableName + "." + outputColumnName);
-                                    outputTableId = tableInfo.get(outputDbTableName);
-                                } catch (Exception e) {
-                                    System.out.println("Attention! No table or column found in mysql meta tables.\n" +
-                                            "output:" + outputDbTableName + "." + outputColumnName);
-                                    outputColumnId = msf.nextId();
-                                    outputTableId = msf.nextId();
-                                }
+                for (String sql : heraJobEntity.getScript().split("(?<!\\\\);")) {
+                    List<SQLResult> list = lineParser.parse(sql);
+                    AtomicInteger relationId = new AtomicInteger(0);
+                    String baseSql = "insert into data_lineage.data_lineage_relation " +
+                            "(`relation_id`,`column_id`,`table_id`,`from_table_id`,`from_column_id`,`condition`) values ";
+                    for (SQLResult sqlResult : list) {
+                        String appendSql = "";
+                        Set<String> inputTables = sqlResult.getInputTables();
+                        Set<String> outputTables = sqlResult.getOutputTables();
+                        List<ColLine> colLineList = sqlResult.getColLineList();
+                        for (String inputTable : inputTables) {
+                            for (String outputTable : outputTables) {
+                                for (ColLine colLine : colLineList) {
+                                    //缓存表和字段这两张表，Map<String,int> 然后通过字段名获取对应字段id
+                                    //column_name 如activity_id
+                                    String outputColumnName = colLine.getToNameParse();
+                                    String outputDbTableName = colLine.getToTable();
+                                    String[] to = outputDbTableName.split("\\.");
+                                    if (to.length == 2) {
+                                        String outputDbName = to[0];
+                                        String outputTableName = to[1];
+                                        long outputColumnId;
+                                        long outputTableId;
+                                        try {
+                                            outputColumnId = columnInfo.get(outputDbTableName + "." + outputColumnName);
+                                            outputTableId = tableInfo.get(outputDbTableName);
+                                        } catch (Exception e) {
+                                            System.out.println("Attention! No table or column found in mysql meta tables.\n" +
+                                                    "output:" + outputDbTableName + "." + outputColumnName);
+                                            problemJobList.add(heraJobEntity.getId());
+                                            outputColumnId = msf.nextId();
+                                            outputTableId = msf.nextId();
+                                        }
 
-                                //from_column_name db.table.column 如BBB.bbb.activity_id
-                                for (String conditionEnum : colLine.getFromNameSet()) {
-                                    String[] fromArray = conditionEnum.split("&");
-                                    for (String tmp : fromArray) {
-                                        String[] from = tmp.split("\\.");
-                                        if (from.length == 3) {
-                                            //处理Mysql逻辑
-                                            String inputDbName = from[0];
-                                            String inputTableName = from[1];
-                                            String inputColumnName = from[2];
-                                            long inputColumnId;
-                                            long inputTableId;
-                                            try {
-                                                inputColumnId = columnInfo.get(tmp);
-                                                inputTableId = tableInfo.get(inputDbName + "." + inputTableName);
-                                            } catch (Exception e) {
-                                                System.out.println("Attention! No table or column found in mysql meta tables.\n" +
-                                                        "input:" + tmp);
-                                                inputColumnId = msf.nextId();
-                                                inputTableId = msf.nextId();
-                                            }
-                                            //condition 将'\''转化为~存，不然sql报错
-                                            String condition = colLine.getConditionSet().toString().replace('\'', '~');
-                                            //++relationId
-                                            relationId.getAndIncrement();
-                                            //insert into data_lineage.data_lineage_relation
-                                            appendSql += "('" + msf.nextId() + "','" + outputColumnId + "','"
-                                                    + outputTableId + "','" + inputTableId + "','"
-                                                    + inputColumnId + "','" + condition + "')";
-                                            if (Integer.parseInt(relationId.toString()) % 10 == 0) {
-                                                dbUtil.doInsert(baseSql + appendSql);
-                                                appendSql = "";
-                                            } else {
-                                                appendSql += ",\n";
-                                            }
+                                        //from_column_name db.table.column 如BBB.bbb.activity_id
+                                        for (String conditionEnum : colLine.getFromNameSet()) {
+                                            String[] fromArray = conditionEnum.split("&");
+                                            for (String tmp : fromArray) {
+                                                String[] from = tmp.split("\\.");
+                                                if (from.length == 3) {
+                                                    //处理Mysql逻辑
+                                                    String inputDbName = from[0];
+                                                    String inputTableName = from[1];
+                                                    String inputColumnName = from[2];
+                                                    long inputColumnId;
+                                                    long inputTableId;
+                                                    try {
+                                                        inputColumnId = columnInfo.get(tmp);
+                                                        inputTableId = tableInfo.get(inputDbName + "." + inputTableName);
+                                                    } catch (Exception e) {
+                                                        System.out.println("Attention! No table or column found in mysql meta tables.\n" +
+                                                                "input:" + tmp);
+                                                        problemJobList.add(heraJobEntity.getId());
+                                                        inputColumnId = msf.nextId();
+                                                        inputTableId = msf.nextId();
+                                                    }
+                                                    //condition 将'\''转化为~存，不然sql报错
+                                                    String condition = colLine.getConditionSet().toString().replace('\'', '~');
+                                                    //++relationId
+                                                    relationId.getAndIncrement();
+                                                    //insert into data_lineage.data_lineage_relation
+                                                    appendSql += "('" + msf.nextId() + "','" + outputColumnId + "','"
+                                                            + outputTableId + "','" + inputTableId + "','"
+                                                            + inputColumnId + "','" + condition + "')";
+                                                    if (Integer.parseInt(relationId.toString()) % 10 == 0) {
+                                                        dbUtil.doInsert(baseSql + appendSql);
+                                                        appendSql = "";
+                                                    } else {
+                                                        appendSql += ",\n";
+                                                    }
 
-                                            //处理Neo4j逻辑
-                                            long startTable = System.currentTimeMillis();
-                                            //neo4j处理table之间血缘
-                                            if (!neo4jUtil.neo4jCheckTableNodeExistByCache(inputDbName, inputTableName)) {
-                                                if (!neo4jUtil.neo4jCreateTableNode(inputDbName, inputTableName)) {
-                                                    throw new Exception("Create neo4j table node error!");
-                                                }
-                                            }
-                                            if (!neo4jUtil.neo4jCheckTableNodeExistByCache(outputDbName, outputTableName)) {
-                                                if (!neo4jUtil.neo4jCreateTableNode(outputDbName, outputTableName)) {
-                                                    throw new Exception("Create neo4j table node error!");
-                                                }
-                                            }
-                                            if (!neo4jUtil.neo4jCheckTableRelationExistByCache(inputDbName, inputTableName,
-                                                    outputDbName, outputTableName)) {
-                                                if (!neo4jUtil.neo4jCreateTableRelation(inputDbName, inputTableName,
-                                                        outputDbName, outputTableName)) {
-                                                    throw new Exception("Create neo4j table relation error!");
-                                                }
-                                            }
+                                                    //处理Neo4j逻辑
+                                                    long startTable = System.currentTimeMillis();
+                                                    //neo4j处理table之间血缘
+                                                    if (!neo4jUtil.neo4jCheckTableNodeExistByCache(inputDbName, inputTableName)) {
+                                                        if (!neo4jUtil.neo4jCreateTableNode(inputDbName, inputTableName)) {
+                                                            throw new Exception("Create neo4j table node error!");
+                                                        }
+                                                    }
+                                                    if (!neo4jUtil.neo4jCheckTableNodeExistByCache(outputDbName, outputTableName)) {
+                                                        if (!neo4jUtil.neo4jCreateTableNode(outputDbName, outputTableName)) {
+                                                            throw new Exception("Create neo4j table node error!");
+                                                        }
+                                                    }
+                                                    if (!neo4jUtil.neo4jCheckTableRelationExistByCache(inputDbName, inputTableName,
+                                                            outputDbName, outputTableName)) {
+                                                        if (!neo4jUtil.neo4jCreateTableRelation(inputDbName, inputTableName,
+                                                                outputDbName, outputTableName)) {
+                                                            throw new Exception("Create neo4j table relation error!");
+                                                        }
+                                                    }
 //                                            System.out.println("deal neo4j table :" + (System.currentTimeMillis() - startTable) + "ms");
 
-                                            //neo4j处理columns之间血缘
-                                            long startColumn = System.currentTimeMillis();
-                                            if (!neo4jUtil.neo4jCheckColumnNodeExistByCache(inputDbName, inputTableName, inputColumnName)) {
-                                                if (!neo4jUtil.neo4jCreateColumnNode(inputDbName, inputTableName, inputColumnName)) {
-                                                    throw new Exception("Create neo4j column node error!");
-                                                }
-                                            }
-                                            if (!neo4jUtil.neo4jCheckColumnNodeExistByCache(outputDbName, outputTableName, outputColumnName)) {
-                                                if (!neo4jUtil.neo4jCreateColumnNode(outputDbName, outputTableName, outputColumnName)) {
-                                                    throw new Exception("Create neo4j column node error!");
-                                                }
-                                            }
-                                            if (!neo4jUtil.neo4jCheckColumnRelationExistByCache(inputDbName, inputTableName,
-                                                    inputColumnName, outputDbName,
-                                                    outputTableName, outputColumnName)) {
-                                                if (!neo4jUtil.neo4jCreateColumnRelation(inputDbName, inputTableName,
-                                                        inputColumnName, outputDbName,
-                                                        outputTableName, outputColumnName)) {
-                                                    throw new Exception("Create neo4j column relation error!");
-                                                }
-                                            }
+                                                    //neo4j处理columns之间血缘
+                                                    long startColumn = System.currentTimeMillis();
+                                                    if (!neo4jUtil.neo4jCheckColumnNodeExistByCache(inputDbName, inputTableName, inputColumnName)) {
+                                                        if (!neo4jUtil.neo4jCreateColumnNode(inputDbName, inputTableName, inputColumnName)) {
+                                                            throw new Exception("Create neo4j column node error!");
+                                                        }
+                                                    }
+                                                    if (!neo4jUtil.neo4jCheckColumnNodeExistByCache(outputDbName, outputTableName, outputColumnName)) {
+                                                        if (!neo4jUtil.neo4jCreateColumnNode(outputDbName, outputTableName, outputColumnName)) {
+                                                            throw new Exception("Create neo4j column node error!");
+                                                        }
+                                                    }
+                                                    if (!neo4jUtil.neo4jCheckColumnRelationExistByCache(inputDbName, inputTableName,
+                                                            inputColumnName, outputDbName,
+                                                            outputTableName, outputColumnName)) {
+                                                        if (!neo4jUtil.neo4jCreateColumnRelation(inputDbName, inputTableName,
+                                                                inputColumnName, outputDbName,
+                                                                outputTableName, outputColumnName)) {
+                                                            throw new Exception("Create neo4j column relation error!");
+                                                        }
+                                                    }
 //                                            System.out.println("deal neo4j column :" + (System.currentTimeMillis() - startColumn) + "ms");
 
-                                            //TODO neo4j处理jobs之间的血缘
+                                                    //TODO neo4j处理jobs之间的血缘
 
+                                                }
+                                            }
                                         }
+                                    } else {
+                                        System.out.println("Error outputDbTableName:" + outputDbTableName);
                                     }
                                 }
                             }
+                            //插入未满一批的部分
+                            if (!"".equals(appendSql)) {
+                                dbUtil.doInsert(baseSql + appendSql.substring(0, appendSql.length() - 2));
+                                appendSql = "";
+                            }
                         }
-                        //插入未满一批的部分
-                        if (!"".equals(appendSql)) {
-                            dbUtil.doInsert(baseSql + appendSql.substring(0, appendSql.length() - 2));
-                            appendSql = "";
-                        }
-                    }
 //                    System.out.println("InputTables:" + sqlResult.getInputTables().toString());
 //                    System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
 //                    System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
+                    }
                 }
             }
         }
         dbUtil.close();
         neo4jUtil.close();
+        System.out.println("ProblemJobList:" + problemJobList);
         System.out.println("Parser time used:" + (System.currentTimeMillis() - startParser) + "ms");
         return "Graph and relations have been successfully inited!";
     }

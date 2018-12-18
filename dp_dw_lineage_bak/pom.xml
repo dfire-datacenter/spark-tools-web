@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dfire.products</groupId>
     <artifactId>dw_lineage</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
     <properties>
         <jdk.version>1.8</jdk.version>

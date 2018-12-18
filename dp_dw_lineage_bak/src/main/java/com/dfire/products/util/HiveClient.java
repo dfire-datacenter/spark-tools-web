@@ -122,11 +122,14 @@ public class HiveClient implements Closeable {
                     try {
                         IMetaStoreClient client = clientPool.take();
                         List<FieldSchema> fields = client.getFields(database, e);
-                        dbUtil.initLineageTable(msf.nextId(), e, database);
+                        long tableId = msf.nextId();
+                        dbUtil.initLineageTable(tableId, e, database);
+//                        System.out.println("tableId1:" + tableId);
                         tableNum.getAndIncrement();
                         fields.parallelStream().forEach(f -> {
                             try {
-                                dbUtil.initLineageColumn(msf.nextId(), e, msf.nextId(), f.getName());
+                                dbUtil.initLineageColumn(tableId, e, msf.nextId(), f.getName());
+//                                System.out.println("tableId2:" + tableId);
                                 columnNum.getAndIncrement();
                                 System.out.println("TableNo:" + tableNum.get() + " FieldsNum:" + columnNum.get());
                             } catch (Exception ex) {
