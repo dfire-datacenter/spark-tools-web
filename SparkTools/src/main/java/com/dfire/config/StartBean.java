@@ -14,6 +14,8 @@ public class StartBean {
 
     public void init() {
         //设置环境变量
-        PropertyFileUtil.init();
+        if (!PropertyFileUtil.isLoaded()) {
+            PropertyFileUtil.init();
+        }
     }
 }

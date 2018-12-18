@@ -406,6 +406,7 @@ public class LineParser {
                 || ast.getType() == HiveParser.TILDE
                 || ast.getType() == HiveParser.BITWISEOR
                 || ast.getType() == HiveParser.BITWISEXOR) {
+//                || ast.getType() == HiveParser.){
             Block bk1 = getBlockIteral((ASTNode) ast.getChild(0));
             if (ast.getChild(1) == null) { // -1
                 bk1.setCondition(ast.getText() + bk1.getCondition());
@@ -795,13 +796,19 @@ public class LineParser {
             if (trim.startsWith("set") || trim.startsWith("add") || Check.isEmpty(trim)) {
                 continue;
             }
-            ASTNode ast = pd.parse(sql);
-            if ("local".equals(PropertyFileUtil.getProperty("environment"))) {
-                System.out.println(ast.toStringTree());
+            try {
+                ASTNode ast = pd.parse(sql);
+                if ("local".equals(PropertyFileUtil.getProperty("environment"))) {
+                    System.out.println(ast.toStringTree());
+                }
+                prepareParse();
+                parseAST(ast);
+                endParse(++i);
+            } catch (Exception e) {
+                if (e.toString().contains("<EOF>")) {
+                    continue;
+                }
             }
-            prepareParse();
-            parseAST(ast);
-            endParse(++i);
         }
         return resultList;
     }

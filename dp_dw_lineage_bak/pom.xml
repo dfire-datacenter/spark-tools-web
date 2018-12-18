@@ -4,10 +4,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dfire.products</groupId>
     <artifactId>dw_lineage</artifactId>
-    <version>1.0</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
     <properties>
         <jdk.version>1.8</jdk.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <dependencies>
         <dependency>
@@ -86,70 +87,27 @@
 
 
     <build>
+        <finalName>dw_lineage</finalName>
         <plugins>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
                 <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <!-- 					<archive> -->
-                    <!-- 						<manifest> -->
-                    <!-- 							是否要把第三方jar放到manifest的classpath中 -->
-                    <!-- 							<addClasspath>true</addClasspath> -->
-                    <!-- 							生成的manifest中classpath的前缀，因为要把第三方jar放到lib目录下，所以classpath的前缀是lib/ -->
-                    <!-- 							<classpathPrefix>lib/</classpathPrefix> -->
-                    <!-- 						</manifest> -->
-                    <!-- 					</archive> -->
-                    <!-- 					<excludes> -->
-                    <!-- 						<exclude>src/main/resources/*</exclude> -->
-                    <!-- 					</excludes> -->
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
+                    <verbose>true</verbose>
+                    <fork>true</fork>
+                    <compilerVersion>${jdk.version}</compilerVersion>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <source>${jdk.version}</source>
-                    <target>${jdk.version}</target>
                 </configuration>
+                <version>3.0.2</version>
             </plugin>
         </plugins>
     </build>
-
-    <!-- 	<build> -->
-    <!-- 		<plugins> -->
-    <!-- 			<plugin> -->
-    <!-- 				<artifactId>maven-assembly-plugin</artifactId> -->
-    <!-- 				<configuration> -->
-    <!-- 					<descriptors> -->
-    <!-- 						<descriptor>src/main/assembly/package.xml</descriptor> -->
-    <!-- 					</descriptors> -->
-    <!-- 				</configuration> -->
-    <!-- 				<executions> -->
-    <!-- 					<execution> -->
-    <!-- 						<id>make-assembly</id> -->
-    <!-- 						<phase>package</phase> -->
-    <!-- 						<goals> -->
-    <!-- 							<goal>single</goal> -->
-    <!-- 						</goals> -->
-    <!-- 					</execution> -->
-    <!-- 				</executions> -->
-    <!-- 			</plugin> -->
-    <!-- 			<plugin> -->
-    <!-- 				<groupId>org.apache.maven.plugins</groupId> -->
-    <!-- 				<artifactId>maven-jar-plugin</artifactId> -->
-    <!-- 				<configuration> -->
-    <!-- 					<archive> -->
-    <!-- 						<manifest> -->
-    <!-- 							是否要把第三方jar放到manifest的classpath中 -->
-    <!-- 							<addClasspath>true</addClasspath> -->
-    <!-- 							生成的manifest中classpath的前缀，因为要把第三方jar放到lib目录下，所以classpath的前缀是lib/ -->
-    <!-- 							<classpathPrefix>lib/</classpathPrefix> -->
-    <!-- 						</manifest> -->
-    <!-- 					</archive> -->
-    <!-- 				</configuration> -->
-    <!-- 			</plugin> -->
-    <!-- 		</plugins> -->
-    <!-- 	</build> -->
 </project>

@@ -11,10 +11,15 @@ import java.util.Map.Entry;
 
 public class DBUtil {
 
-    private String driver;
-    private String url;
-    private String user;
-    private String password;
+    private String lineageMysqlDriver;
+    private String lineageMysqlUrl;
+    private String lineageMysqlUser;
+    private String lineageMysqlPassword;
+
+    private String heraMysqlDriver;
+    private String heraMysqlUrl;
+    private String heraMysqlUser;
+    private String heraMysqlPassword;
 
     private String     sparkDriver;
     private String     sparkUrl;
@@ -34,48 +39,52 @@ public class DBUtil {
 
 
     public DBUtil() {
-        this.sparkDriver = "org.apache.hive.jdbc.HiveDriver";
-        this.sparkUrl = "jdbc:hive2://10.10.18.215:10000";
-        this.sparkUser = "import";
-        this.sparkPassword = "import";
+        if (!PropertyFileUtil.isLoaded()) {
+            PropertyFileUtil.init();
+        }
+        this.sparkDriver = PropertyFileUtil.getProperty("spark.driver");
+        this.sparkUrl = PropertyFileUtil.getProperty("spark.url");
+        this.sparkUser = PropertyFileUtil.getProperty("spark.user");
+        this.sparkPassword = PropertyFileUtil.getProperty("spark.password");
 
-        this.driver = "com.mysql.jdbc.Driver";
-        this.url = "jdbc:mysql://10.1.6.10:3306";
-        this.user = "twodfire";
-        this.password = "123456";
+        this.lineageMysqlDriver = PropertyFileUtil.getProperty("lineage.mysql.driver");
+        this.lineageMysqlUrl = PropertyFileUtil.getProperty("lineage.mysql.url");
+        this.lineageMysqlUser = PropertyFileUtil.getProperty("lineage.mysql.user");
+        this.lineageMysqlPassword = PropertyFileUtil.getProperty("lineage.mysql.password");
 
-//        this.driver = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.driverClassName");
-//        this.url = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.url");
-//        this.user = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.username");
-//        this.password = PropertyFileUtil.getProperty(type.name().toLowerCase() + ".jdbc.password");
+        this.heraMysqlDriver = PropertyFileUtil.getProperty("hera.mysql.driver");
+        this.heraMysqlUrl = PropertyFileUtil.getProperty("hera.mysql.url");
+        this.heraMysqlUser = PropertyFileUtil.getProperty("hera.mysql.user");
+        this.heraMysqlPassword = PropertyFileUtil.getProperty("hera.mysql.password");
+
     }
 
     private void initHeraConnection() {
-        if (heraConnectionPool == null) {
-            try {
-                heraConnectionPool = new MysqlConnectionPool(this.driver,
-                        "jdbc:mysql://rdsdb1101.my.2dfire-inc.com:3306",
-                        "lineage",
-                        "lineage@552208");
+        try {
+            if (heraConnectionPool == null) {
+                heraConnectionPool = new MysqlConnectionPool(this.heraMysqlDriver,
+                        this.heraMysqlUrl,
+                        this.heraMysqlUser,
+                        this.heraMysqlPassword);
                 heraConnectionPool.createPool();
-            } catch (ClassNotFoundException classnotfoundexception) {
-                classnotfoundexception.printStackTrace();
-                System.err.println("db: " + classnotfoundexception.getMessage());
-            } catch (SQLException sqlexception) {
-                System.err.println("db.getconn(): " + sqlexception.getMessage());
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (ClassNotFoundException classnotfoundexception) {
+            classnotfoundexception.printStackTrace();
+            System.err.println("db: " + classnotfoundexception.getMessage());
+        } catch (SQLException sqlexception) {
+            System.err.println("db.getconn(): " + sqlexception.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     private void initMysqlConnection() {
         if (mysqlConnectionPool == null) {
             try {
-                mysqlConnectionPool = new MysqlConnectionPool(this.driver,
-                        this.url,
-                        this.user,
-                        this.password);
+                mysqlConnectionPool = new MysqlConnectionPool(lineageMysqlDriver,
+                        lineageMysqlUrl,
+                        lineageMysqlUser,
+                        lineageMysqlPassword);
                 mysqlConnectionPool.createPool();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -179,19 +188,21 @@ public class DBUtil {
     public void close() throws Exception {
         if (mysqlConnectionPool != null) {
             mysqlConnectionPool.closeConnectionPool();
+            heraConnectionPool = null;
         }
         if (heraConnectionPool != null) {
             heraConnectionPool.closeConnectionPool();
+            heraConnectionPool = null;
         }
     }
 
-    public void initLineageTable(int tableId, String table, String database) throws Exception {
+    public void initLineageTable(long tableId, String table, String database) throws Exception {
         doInsert("insert into data_lineage.data_lineage_table " +
                 "(`table_id`,`table_name`,`database_name`) " +
                 "values('" + tableId + "','" + table + "','" + database + "')");
     }
 
-    public void initLineageColumn(int tableId, String tableName, int columnId, String columnName) throws Exception {
+    public void initLineageColumn(long tableId, String tableName, long columnId, String columnName) throws Exception {
         doInsert("insert into data_lineage.data_lineage_column " +
                 "(`column_id`,`column_name`,`table_id`,`table_name`) " +
                 "values('" + columnId + "','" + columnName + "','" + tableId + "','" + tableName + "')");

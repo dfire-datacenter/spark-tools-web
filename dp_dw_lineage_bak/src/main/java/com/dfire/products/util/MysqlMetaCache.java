@@ -15,9 +15,9 @@ import java.util.Map;
 @Data
 public class MysqlMetaCache {
 
-    public         Map<String, Integer> tableInfo   = new HashMap<>(16384);
-    public         Map<Integer, String> tableInfoId = new HashMap<>(16384);
-    public         Map<String, Integer> columnInfo  = new HashMap<>(262144);
+    public         Map<String, Long> tableInfo   = new HashMap<>(16384);
+    public         Map<Long, String> tableInfoId = new HashMap<>(16384);
+    public         Map<String, Long> columnInfo  = new HashMap<>(262144);
     private static DBUtil               dbUtil      = new DBUtil();
 
     public MysqlMetaCache() {
@@ -30,14 +30,14 @@ public class MysqlMetaCache {
                 List<Map<String, Object>> rs = dbUtil.doSelect("select * from data_lineage.data_lineage_table");
                 for (Map map : rs) {
                     tableInfo.put(map.get("database_name") + "." + map.get("table_name"),
-                            Integer.parseInt(map.get("table_id").toString()));
-                    tableInfoId.put(Integer.parseInt(map.get("table_id").toString()),
+                            Long.parseLong(map.get("table_id").toString()));
+                    tableInfoId.put(Long.parseLong(map.get("table_id").toString()),
                             map.get("database_name") + "." + map.get("table_name"));
                 }
                 rs = dbUtil.doSelect("select * from data_lineage.data_lineage_column");
                 for (Map map : rs) {
-                    columnInfo.put(tableInfoId.get(Integer.parseInt(map.get("table_id").toString())) + "." + map.get("column_name"),
-                            Integer.parseInt(map.get("column_id").toString()));
+                    columnInfo.put(tableInfoId.get(Long.parseLong(map.get("table_id").toString())) + "." + map.get("column_name"),
+                            Long.parseLong(map.get("column_id").toString()));
                 }
             }
             System.out.println("Successfully init Mysql MetaInfo!");

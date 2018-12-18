@@ -41,6 +41,7 @@ public class HiveClient implements Closeable {
 
     public static LinkedBlockingQueue<IMetaStoreClient> clientPool = new LinkedBlockingQueue<>(10);
 
+    private static MagicSnowFlake msf = new MagicSnowFlake(1, 1);
 
     public static IMetaStoreClient getMetaStore() throws HiveException, MetaException {
         HiveConf hiveConf = new HiveConf();
@@ -121,10 +122,12 @@ public class HiveClient implements Closeable {
                     try {
                         IMetaStoreClient client = clientPool.take();
                         List<FieldSchema> fields = client.getFields(database, e);
-                        dbUtil.initLineageTable(tableNum.getAndIncrement(), e, database);
+                        dbUtil.initLineageTable(msf.nextId(), e, database);
+                        tableNum.getAndIncrement();
                         fields.parallelStream().forEach(f -> {
                             try {
-                                dbUtil.initLineageColumn(tableNum.get(), e, columnNum.getAndIncrement(), f.getName());
+                                dbUtil.initLineageColumn(msf.nextId(), e, msf.nextId(), f.getName());
+                                columnNum.getAndIncrement();
                                 System.out.println("TableNo:" + tableNum.get() + " FieldsNum:" + columnNum.get());
                             } catch (Exception ex) {
                                 ex.printStackTrace();
