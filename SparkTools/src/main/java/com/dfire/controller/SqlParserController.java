@@ -30,8 +30,7 @@ public class SqlParserController {
 
     // http://127.0.0.1:8089/sql/spark_parser
 
-    private DBUtil         dbUtil         = new DBUtil();
-    private MysqlMetaCache mysqlMetaCache = new MysqlMetaCache();
+    private DBUtil dbUtil = new DBUtil();
     private List<HeraJobEntity> heraJobList;
 
     MagicSnowFlake msf = new MagicSnowFlake(1, 1);
@@ -121,7 +120,8 @@ public class SqlParserController {
     @RequestMapping("/initGraph")
     public String initGraph(@RequestBody Integer parseNum) throws Exception {
         long startParser = System.currentTimeMillis();
-        List<Long> problemJobList = new ArrayList<>();
+        MysqlMetaCache mysqlMetaCache = new MysqlMetaCache();
+        Set<Long> problemJobList = new LinkedHashSet<>();
         Map<String, Long> tableInfo = mysqlMetaCache.getTableInfo();
         Map<String, Long> columnInfo = mysqlMetaCache.getColumnInfo();
         Neo4jUtil neo4jUtil = new Neo4jUtil();
@@ -206,7 +206,7 @@ public class SqlParserController {
                                                     }
 
                                                     //处理Neo4j逻辑
-                                                    long startTable = System.currentTimeMillis();
+//                                                    long startTable = System.currentTimeMillis();
                                                     //neo4j处理table之间血缘
                                                     if (!neo4jUtil.neo4jCheckTableNodeExistByCache(inputDbName, inputTableName)) {
                                                         if (!neo4jUtil.neo4jCreateTableNode(inputDbName, inputTableName)) {
@@ -228,7 +228,7 @@ public class SqlParserController {
 //                                            System.out.println("deal neo4j table :" + (System.currentTimeMillis() - startTable) + "ms");
 
                                                     //neo4j处理columns之间血缘
-                                                    long startColumn = System.currentTimeMillis();
+//                                                    long startColumn = System.currentTimeMillis();
                                                     if (!neo4jUtil.neo4jCheckColumnNodeExistByCache(inputDbName, inputTableName, inputColumnName)) {
                                                         if (!neo4jUtil.neo4jCreateColumnNode(inputDbName, inputTableName, inputColumnName)) {
                                                             throw new Exception("Create neo4j column node error!");
@@ -275,6 +275,7 @@ public class SqlParserController {
         }
         dbUtil.close();
         neo4jUtil.close();
+        System.out.println("ProblemJobList size:" + problemJobList.size());
         System.out.println("ProblemJobList:" + problemJobList);
         System.out.println("Parser time used:" + (System.currentTimeMillis() - startParser) + "ms");
         return "Graph and relations have been successfully inited!";
