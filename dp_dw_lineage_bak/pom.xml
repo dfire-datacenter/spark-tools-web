@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dfire.products</groupId>
     <artifactId>dw_lineage</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>jar</packaging>
     <properties>
         <jdk.version>1.8</jdk.version>
@@ -82,7 +82,11 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.33</version>
         </dependency>
-
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.9.9</version>
+        </dependency>
     </dependencies>
 
 

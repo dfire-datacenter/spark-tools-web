@@ -786,7 +786,7 @@ public class LineParser {
         if (Check.isEmpty(sqlAll)) {
             return resultList;
         }
-        //清空最终结果集
+        //清空最终结果集(放在调用外面手动清空)
         startParseAll();
         //当前是第i个sql
         int i = 0;
@@ -807,6 +807,8 @@ public class LineParser {
             } catch (Exception e) {
                 if (e.toString().contains("<EOF>")) {
                     continue;
+                } else {
+                    throw new Exception("exit;");
                 }
             }
         }
@@ -816,7 +818,7 @@ public class LineParser {
     /**
      * 清空上次处理的结果
      */
-    private void startParseAll() {
+    public void startParseAll() {
         resultList.clear();
     }
 

@@ -18,6 +18,8 @@ import java.io.Closeable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,6 +45,9 @@ public class HiveClient implements Closeable {
 
     private static MagicSnowFlake msf = new MagicSnowFlake(1, 1);
 
+    public static ConcurrentHashMap<String, List<String>> tableColumnInfo = new ConcurrentHashMap<>(16384);
+
+
     public static IMetaStoreClient getMetaStore() throws HiveException, MetaException {
         HiveConf hiveConf = new HiveConf();
         hiveConf.setVar(HiveConf.ConfVars.METASTOREURIS, META_STORE_URIS);
@@ -60,7 +65,6 @@ public class HiveClient implements Closeable {
         List<FieldSchema> partitionKeys = table.getPartitionKeys();
         String[] columns = nameList.toArray(new String[nameList.size()]);
         String delimiter = table.getSd().getSerdeInfo().getParameters().get("field.delim");
-
         return new Meta(columns, delimiter, partitionKeys.get(0).getName());
     }
 
@@ -83,28 +87,66 @@ public class HiveClient implements Closeable {
     }
 
     private static void initClientPool() {
-        int size = 10;
-        ExecutorService threadPool = Executors.newFixedThreadPool(size);
-        for (int i = 0; i < size; i++) {
-            try {
-                threadPool.submit(() -> {
-                    try {
-                        IMetaStoreClient client = getMetaStore();
-                        clientPool.put(client);
-                    } catch (InterruptedException | HiveException | MetaException e) {
-                        e.printStackTrace();
-                    }
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
+        if (clientPool.size() == 0) {
+            int size = 10;
+            ExecutorService threadPool = Executors.newFixedThreadPool(size);
+            for (int i = 0; i < size; i++) {
+                try {
+                    threadPool.submit(() -> {
+                        try {
+                            IMetaStoreClient client = getMetaStore();
+                            clientPool.put(client);
+                        } catch (InterruptedException | HiveException | MetaException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
 
     /**
-     * 统计hive库表字段信息到mysql
+     * 初始化所有表的字段信息 按照顺序
      */
-//    public static void main(String[] args) {
+    public static Map<String, List<String>> initAndGetTableColumnInfo() {
+        if (tableColumnInfo.size() != 0) {
+            tableColumnInfo.clear();
+        }
+        initClientPool();
+        try {
+            IMetaStoreClient outClient = getMetaStore();
+            List<String> databases = outClient.getAllDatabases();
+            int dbNum = 0;
+            for (String database : databases) {
+                System.out.println("No:" + (++dbNum) + ";DbName:" + database);
+                List<String> allTables = outClient.getAllTables(database);
+                allTables.parallelStream().forEach(e -> {
+                    try {
+                        IMetaStoreClient client = clientPool.take();
+                        List<FieldSchema> fields = client.getFields(database, e);
+                        List<String> columns = new ArrayList<>();
+                        fields.forEach(field -> columns.add(field.getName()));
+                        tableColumnInfo.put(database + "." + e, columns);
+                        clientPool.put(client);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                });
+            }
+            outClient.close();
+            if (clientPool.size() != 0) {
+                for (IMetaStoreClient tmpClient : clientPool) {
+                    tmpClient.close();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return tableColumnInfo;
+    }
+
     public static void initMetaInfoToMysql() {
         initClientPool();
         List<String> databases = null;
@@ -122,14 +164,15 @@ public class HiveClient implements Closeable {
                     try {
                         IMetaStoreClient client = clientPool.take();
                         List<FieldSchema> fields = client.getFields(database, e);
+                        List<String> columns = new ArrayList<>();
+                        fields.forEach(field -> columns.add(field.getName()));
+                        tableColumnInfo.put(database + "." + e, columns);
                         long tableId = msf.nextId();
                         dbUtil.initLineageTable(tableId, e, database);
-//                        System.out.println("tableId1:" + tableId);
                         tableNum.getAndIncrement();
                         fields.parallelStream().forEach(f -> {
                             try {
                                 dbUtil.initLineageColumn(tableId, e, msf.nextId(), f.getName());
-//                                System.out.println("tableId2:" + tableId);
                                 columnNum.getAndIncrement();
                                 System.out.println("TableNo:" + tableNum.get() + " FieldsNum:" + columnNum.get());
                             } catch (Exception ex) {
@@ -154,7 +197,6 @@ public class HiveClient implements Closeable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        System.out.println(databases);
     }
 
 

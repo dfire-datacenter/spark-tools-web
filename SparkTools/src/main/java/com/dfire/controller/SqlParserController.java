@@ -5,6 +5,7 @@ import com.dfire.entity.SparkPlanResultEntity;
 import com.dfire.products.bean.ColLine;
 import com.dfire.products.bean.SQLResult;
 import com.dfire.products.dao.Neo4jDaoImpl;
+import com.dfire.products.hera.RenderHierarchyProperties;
 import com.dfire.products.parse.LineParser;
 import com.dfire.products.util.*;
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser;
@@ -31,7 +32,9 @@ public class SqlParserController {
     // http://127.0.0.1:8089/sql/spark_parser
 
     private DBUtil dbUtil = new DBUtil();
-    private List<HeraJobEntity> heraJobList;
+    private List<HeraJobEntity>       heraJobList;
+    public  Map<String, List<String>> tableColumnInfo;
+
 
     MagicSnowFlake msf = new MagicSnowFlake(1, 1);
 
@@ -85,7 +88,7 @@ public class SqlParserController {
         List<SQLResult> list = new ArrayList<>();
         LineParser lineParser = new LineParser();
         try {
-            list = lineParser.parse(sql);
+            list = lineParser.parse(RenderHierarchyProperties.render(sql));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -100,6 +103,16 @@ public class SqlParserController {
         long start = System.currentTimeMillis();
         HiveClient.initMetaInfoToMysql();
         return "Successfully init MetaInfo to Mysql!\n" + "Time cost:" + (System.currentTimeMillis() - start) + "ms";
+    }
+
+    /**
+     * 扫描hera hive spark任务 存入mysql
+     */
+    @RequestMapping("/initTableColumnInfo")
+    public String initTableColumnInfo() {
+        long start = System.currentTimeMillis();
+        tableColumnInfo = HiveClient.initAndGetTableColumnInfo();
+        return "Time cost:" + (System.currentTimeMillis() - start) + "ms";
     }
 
     /**
@@ -128,14 +141,23 @@ public class SqlParserController {
         LineParser lineParser = new LineParser();
         if (heraJobList == null) {
             System.out.println("Please initMetaInfoToMysql and initHeraInfo first!");
+            dbUtil.close();
+            neo4jUtil.close();
             return "Please initMetaInfoToMysql and initHeraInfo first!";
         } else {
-            System.out.println("HeraJobToTalNum:" + heraJobList.size());
-            AtomicInteger number = new AtomicInteger(0);
-            for (HeraJobEntity heraJobEntity : heraJobList) {
-                System.out.println("HeraJob No:" + number.incrementAndGet());
-                for (String sql : heraJobEntity.getScript().split("(?<!\\\\);")) {
-                    List<SQLResult> list = lineParser.parse(sql);
+            if (tableColumnInfo == null) {
+                System.out.println("Please initTableColumnInfo or initMetaInfoToMysql first!");
+                dbUtil.close();
+                neo4jUtil.close();
+                return "Please initTableColumnInfo or initMetaInfoToMysql first!";
+            } else {
+                System.out.println("HeraJobToTalNum:" + heraJobList.size());
+                AtomicInteger number = new AtomicInteger(0);
+                for (HeraJobEntity heraJobEntity : heraJobList) {
+                    System.out.println("HeraJob No:" + number.incrementAndGet());
+//                lineParser.
+//                for (String sql : heraJobEntity.getScript().split("(?<!\\\\);")) {
+                    List<SQLResult> list = lineParser.parse(RenderHierarchyProperties.render(heraJobEntity.getScript()));
                     AtomicInteger relationId = new AtomicInteger(0);
                     String baseSql = "insert into data_lineage.data_lineage_relation " +
                             "(`relation_id`,`column_id`,`table_id`,`from_table_id`,`from_column_id`,`condition`) values ";
@@ -149,8 +171,8 @@ public class SqlParserController {
                                 for (ColLine colLine : colLineList) {
                                     //缓存表和字段这两张表，Map<String,int> 然后通过字段名获取对应字段id
                                     //column_name 如activity_id
-                                    String outputColumnName = colLine.getToNameParse();
                                     String outputDbTableName = colLine.getToTable();
+                                    String outputColumnName = tableColumnInfo.get(outputDbTableName).get(colLineList.indexOf(colLine));
                                     String[] to = outputDbTableName.split("\\.");
                                     if (to.length == 2) {
                                         String outputDbName = to[0];
@@ -266,10 +288,12 @@ public class SqlParserController {
                                 appendSql = "";
                             }
                         }
+
 //                    System.out.println("InputTables:" + sqlResult.getInputTables().toString());
 //                    System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
 //                    System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
                     }
+//                }
                 }
             }
         }

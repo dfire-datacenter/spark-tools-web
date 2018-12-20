@@ -18,6 +18,7 @@
     <modules>
         <module>SparkTools</module>
         <module>SparkTools_Scala</module>
+        <module>dp_dw_lineage_bak</module>
     </modules>
 
 </project>
