@@ -1,6 +1,7 @@
 package com.dfire.controller;
 
 import com.dfire.ResolveLogicalPlan;
+import com.dfire.entity.SearchNeo4jEntity;
 import com.dfire.entity.SparkPlanResultEntity;
 import com.dfire.products.bean.ColLine;
 import com.dfire.products.bean.SQLResult;
@@ -33,7 +34,8 @@ public class SqlParserController {
 
     private DBUtil dbUtil = new DBUtil();
     private List<HeraJobEntity>       heraJobList;
-    public  Map<String, List<String>> tableColumnInfo;
+    private Map<String, List<String>> tableColumnInfo;
+    private Neo4jUtil neo4jUtil = new Neo4jUtil();
 
 
     MagicSnowFlake msf = new MagicSnowFlake(1, 1);
@@ -81,6 +83,19 @@ public class SqlParserController {
                 null,
                 ""
         );
+    }
+
+    /**
+     * 查询neo4j table relation
+     */
+    @RequestMapping("/searchTableRelation")
+    public List<String> searchTableRelation(@RequestBody SearchNeo4jEntity searchNeo4jEntity) {
+        return neo4jUtil.neo4jSearchTable(searchNeo4jEntity.getInputDatabaseName(),
+                searchNeo4jEntity.getInputTableName(),
+                searchNeo4jEntity.getOutputDatabaseName(),
+                searchNeo4jEntity.getOutputTableName(),
+                searchNeo4jEntity.getTreeDepth(),
+                searchNeo4jEntity.getLimit());
     }
 
     @RequestMapping("/hive_parser")
@@ -137,7 +152,6 @@ public class SqlParserController {
         Set<Long> problemJobList = new LinkedHashSet<>();
         Map<String, Long> tableInfo = mysqlMetaCache.getTableInfo();
         Map<String, Long> columnInfo = mysqlMetaCache.getColumnInfo();
-        Neo4jUtil neo4jUtil = new Neo4jUtil();
         LineParser lineParser = new LineParser();
         if (heraJobList == null) {
             System.out.println("Please initMetaInfoToMysql and initHeraInfo first!");
@@ -155,6 +169,10 @@ public class SqlParserController {
                 AtomicInteger number = new AtomicInteger(0);
                 for (HeraJobEntity heraJobEntity : heraJobList) {
                     System.out.println("HeraJob No:" + number.incrementAndGet());
+                    //快速测试 跳过检测过的job
+//                    if (heraJobEntity.getId() <= 669) {
+//                        continue;
+//                    }
 //                lineParser.
 //                for (String sql : heraJobEntity.getScript().split("(?<!\\\\);")) {
                     List<SQLResult> list = lineParser.parse(RenderHierarchyProperties.render(heraJobEntity.getScript()));
@@ -172,20 +190,28 @@ public class SqlParserController {
                                     //缓存表和字段这两张表，Map<String,int> 然后通过字段名获取对应字段id
                                     //column_name 如activity_id
                                     String outputDbTableName = colLine.getToTable();
-                                    String outputColumnName = tableColumnInfo.get(outputDbTableName).get(colLineList.indexOf(colLine));
+                                    String outputColumnName;
+                                    if (tableColumnInfo.get(outputDbTableName) != null
+                                            && colLineList.size() == tableColumnInfo.get(outputDbTableName).size()) {
+                                        outputColumnName = tableColumnInfo.get(outputDbTableName).get(colLineList.indexOf(colLine));
+                                    } else {
+                                        outputColumnName = colLine.getToNameParse();
+                                    }
                                     String[] to = outputDbTableName.split("\\.");
                                     if (to.length == 2) {
                                         String outputDbName = to[0];
                                         String outputTableName = to[1];
-                                        long outputColumnId;
-                                        long outputTableId;
+                                        Long outputColumnId = null;
+                                        Long outputTableId = null;
                                         try {
                                             outputColumnId = columnInfo.get(outputDbTableName + "." + outputColumnName);
                                             outputTableId = tableInfo.get(outputDbTableName);
                                         } catch (Exception e) {
                                             System.out.println("Attention! No table or column found in mysql meta tables.\n" +
                                                     "output:" + outputDbTableName + "." + outputColumnName);
-                                            problemJobList.add(heraJobEntity.getId());
+                                            if (outputColumnId != null) {
+                                                problemJobList.add(heraJobEntity.getId());
+                                            }
                                             outputColumnId = msf.nextId();
                                             outputTableId = msf.nextId();
                                         }
@@ -200,15 +226,17 @@ public class SqlParserController {
                                                     String inputDbName = from[0];
                                                     String inputTableName = from[1];
                                                     String inputColumnName = from[2];
-                                                    long inputColumnId;
-                                                    long inputTableId;
+                                                    Long inputColumnId = null;
+                                                    Long inputTableId = null;
                                                     try {
                                                         inputColumnId = columnInfo.get(tmp);
                                                         inputTableId = tableInfo.get(inputDbName + "." + inputTableName);
                                                     } catch (Exception e) {
                                                         System.out.println("Attention! No table or column found in mysql meta tables.\n" +
                                                                 "input:" + tmp);
-                                                        problemJobList.add(heraJobEntity.getId());
+                                                        if (inputColumnId != null) {
+                                                            problemJobList.add(heraJobEntity.getId());
+                                                        }
                                                         inputColumnId = msf.nextId();
                                                         inputTableId = msf.nextId();
                                                     }

@@ -5,7 +5,6 @@ import com.dfire.products.bean.ColLine;
 import com.dfire.products.bean.QueryTree;
 import com.dfire.products.bean.SQLResult;
 import com.dfire.products.exception.SQLParseException;
-import com.dfire.products.exception.UnSupportedException;
 import com.dfire.products.util.*;
 import org.antlr.runtime.tree.Tree;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
@@ -306,7 +305,8 @@ public class LineParser {
                      */
                     //1、过滤条件的处理join类
                     if (joinOn != null && joinOn.getTokenStartIndex() == ast.getTokenStartIndex()
-                            && joinOn.getTokenStopIndex() == ast.getTokenStopIndex()) {
+                            && joinOn.getTokenStopIndex() == ast.getTokenStopIndex()
+                            && ast.getChildren().size() == 3) {
                         ASTNode astCon = (ASTNode) ast.getChild(2);
                         conditions.add(ast.getText().substring(4) + ":" + getBlockIteral(astCon).getCondition());
                         break;
@@ -672,7 +672,8 @@ public class LineParser {
                     nowQueryDB = ast.getChild(0).getText();
                     break;
                 case HiveParser.TOK_TRANSFORM:
-                    throw new UnSupportedException("no support transform using clause");
+                    break;
+                //TODO throw new UnSupportedException("no support transform using clause");
                 case HiveParser.TOK_RIGHTOUTERJOIN:
                 case HiveParser.TOK_LEFTOUTERJOIN:
                 case HiveParser.TOK_JOIN:
@@ -786,12 +787,21 @@ public class LineParser {
         if (Check.isEmpty(sqlAll)) {
             return resultList;
         }
-        //清空最终结果集(放在调用外面手动清空)
         startParseAll();
         //当前是第i个sql
         int i = 0;
         for (String sql : sqlAll.split("(?<!\\\\);")) {
             ParseDriver pd = new ParseDriver();
+            if (sql.contains("--")) {
+                String[] lines = sql.split("\n");
+                StringBuilder sqlResult = new StringBuilder(lines.length);
+                for (String line : lines) {
+                    if (!line.trim().startsWith("--")) {
+                        sqlResult.append(line).append('\n');
+                    }
+                }
+                sql = sqlResult.toString();
+            }
             String trim = sql.toLowerCase().trim();
             if (trim.startsWith("set") || trim.startsWith("add") || Check.isEmpty(trim)) {
                 continue;
@@ -808,7 +818,13 @@ public class LineParser {
                 if (e.toString().contains("<EOF>")) {
                     continue;
                 } else {
-                    throw new Exception("exit;");
+                    if (e.toString().contains("NullPointerException")) {
+                        System.out.println("******" + sqlAll);
+                        continue;
+                    } else {
+                        System.out.println("&&&&&&" + sqlAll);
+                        continue;
+                    }
                 }
             }
         }
@@ -818,7 +834,7 @@ public class LineParser {
     /**
      * 清空上次处理的结果
      */
-    public void startParseAll() {
+    private void startParseAll() {
         resultList.clear();
     }
 

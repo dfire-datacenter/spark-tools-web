@@ -228,6 +228,54 @@ public class Neo4jUtil {
         throw new Exception("Create neo4j column relation error!");
     }
 
+    public List<String> neo4jSearchTable(String inputDatabaseName,
+                                         String inputTableName,
+                                         String outputDatabaseName,
+                                         String outputTableName,
+                                         String treeDepth,
+                                         String limit) {
+        treeDepth = (treeDepth == null ? "1" : treeDepth);
+        limit = (limit == null ? "10" : limit);
+        String sql;
+        if (inputDatabaseName != null
+                && inputTableName != null) {
+            if (outputDatabaseName != null
+                    && outputTableName != null) {
+                sql = "match n=(a:TableNode{database_name:\"" + inputDatabaseName + "\"," +
+                        "table_name:\"" + inputTableName + "\"})-[*1.." + treeDepth + "]->(b:TableNode{" +
+                        "database_name:\"" + outputDatabaseName + "\"," +
+                        "table_name:\"" + outputTableName + "\"})\n" +
+                        "return n limit " + limit;
+            } else {
+                sql = "match n=(a:TableNode{database_name:\"" + inputDatabaseName + "\"," +
+                        "table_name:\"" + inputTableName + "\"})-[*1.." + treeDepth + "]->(b:TableNode)\n" +
+                        "return n limit " + limit;
+            }
+        } else {
+            if (outputDatabaseName != null
+                    && outputTableName != null) {
+                sql = "match n=(a:TableNode)-[*1.." + treeDepth + "]->(b:TableNode{" +
+                        "database_name:\"" + outputDatabaseName + "\"," +
+                        "table_name:\"" + outputTableName + "\"})\n" +
+                        "return n limit " + limit;
+            } else {
+                System.out.println("Parameters error!");
+                return null;
+            }
+        }
+        try {
+            ResultSet resultSet = neo4jDao.executeQuery(sql);
+            List<String> resultList = new ArrayList<>();
+            while (resultSet.next()) {
+                resultList.add(resultSet.getString("n"));
+            }
+            return resultList;
+        } catch (Exception e) {
+
+        }
+        return null;
+    }
+
     public void close() {
         neo4jDao.close();
     }
