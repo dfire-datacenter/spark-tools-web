@@ -37,11 +37,12 @@ public class SqlParserController {
     private DBUtil dbUtil = new DBUtil();
     private List<HeraJobEntity>       heraJobList;
     private Map<String, List<String>> tableColumnInfo;
-    private Neo4jUtil neo4jUtil = new Neo4jUtil();
+    private Neo4jUtil             neo4jUtil    = new Neo4jUtil();
+    private HashMap<String, Long> uselessTable = new HashMap<>(20000);
 
     private Configuration conf = new Configuration();
 
-    MagicSnowFlake msf = new MagicSnowFlake(1, 1);
+    private MagicSnowFlake msf = new MagicSnowFlake(1, 1);
 
     @RequestMapping("/spark_parser")
     public SparkPlanResultEntity parser(@RequestBody String sql) {
@@ -164,7 +165,8 @@ public class SqlParserController {
         MysqlMetaCache mysqlMetaCache = new MysqlMetaCache();
         Set<Long> problemTableList = new LinkedHashSet<>();
         Set<Long> problemColumnList = new LinkedHashSet<>();
-        Map<String, Long> tableInfo = mysqlMetaCache.getTableInfo();
+        HashMap<String, Long> tableInfo = mysqlMetaCache.getTableInfo();
+        uselessTable.putAll(tableInfo);
         Map<String, Long> columnInfo = mysqlMetaCache.getColumnInfo();
         LineParser lineParser = new LineParser();
         if (heraJobList == null) {
@@ -223,6 +225,7 @@ public class SqlParserController {
                                         try {
                                             outputColumnId = columnInfo.get(outputDbTableName + "." + outputColumnName);
                                             outputTableId = tableInfo.get(outputDbTableName);
+                                            uselessTable.remove(outputDbTableName);
                                         } catch (Exception e) {
                                             System.out.println("Attention! No table or column found in mysql meta tables.\n" +
                                                     "output:" + outputDbTableName + "." + outputColumnName);
@@ -248,6 +251,7 @@ public class SqlParserController {
                                                     try {
                                                         inputColumnId = columnInfo.get(tmp);
                                                         inputTableId = tableInfo.get(inputDbName + "." + inputTableName);
+                                                        uselessTable.remove(inputDbName + "." + inputTableName);
                                                     } catch (Exception e) {
                                                         System.out.println("Attention! No table or column found in mysql meta tables.\n" +
                                                                 "input:" + tmp);
@@ -350,6 +354,8 @@ public class SqlParserController {
         }
         dbUtil.close();
         neo4jUtil.close();
+        uselessTable.forEach((name, id) -> System.out.println("Useless table name:" + name + ";id:" + id));
+        System.out.println("");
         System.out.println("problemColumnList size:" + problemColumnList.size());
         System.out.println("problemColumnList:" + problemColumnList);
         System.out.println("ProblemTableList size:" + problemTableList.size());
