@@ -148,6 +148,9 @@ public class HiveClient implements Closeable {
     }
 
     public static void initMetaInfoToMysql() {
+        if (tableColumnInfo.size() != 0) {
+            tableColumnInfo.clear();
+        }
         initClientPool();
         List<String> databases = null;
         int databasesNum;

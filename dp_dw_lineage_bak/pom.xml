@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dfire.products</groupId>
     <artifactId>dw_lineage</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.4</version>
     <packaging>jar</packaging>
     <properties>
         <jdk.version>1.8</jdk.version>
@@ -86,6 +86,10 @@
                 <exclusion>
                     <groupId>org.apache.hive</groupId>
                     <artifactId>hive-shims</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hive</groupId>
+                    <artifactId>hive-common</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

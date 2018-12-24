@@ -7,6 +7,7 @@ import com.dfire.products.bean.SQLResult;
 import com.dfire.products.exception.SQLParseException;
 import com.dfire.products.util.*;
 import org.antlr.runtime.tree.Tree;
+import org.apache.hadoop.hive.ql.Context;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
@@ -36,14 +37,13 @@ import java.util.Map.Entry;
  */
 public class LineParser {
 
-    private static final String SPLIT_DOT    = ".";
-    private static final String SPLIT_COMMA  = ",";
-    private static final String SPLIT_AND    = "&";
-    private static final String TOK_EOF      = "<EOF>";
-    private static final String CON_WHERE    = "WHERE:";
-    private static final String TOK_TMP_FILE = "TOK_TMP_FILE";
-
-    private Map<String /*table*/, List<String/*column*/>> dbMap = new HashMap<>();
+    private static final String                                        SPLIT_DOT    = ".";
+    private static final String                                        SPLIT_COMMA  = ",";
+    private static final String                                        SPLIT_AND    = "&";
+    private static final String                                        TOK_EOF      = "<EOF>";
+    private static final String                                        CON_WHERE    = "WHERE:";
+    private static final String                                        TOK_TMP_FILE = "TOK_TMP_FILE";
+    private              Map<String /*table*/, List<String/*column*/>> dbMap        = new HashMap<>();
 
     /**
      * 子查询树形关系保存
@@ -589,7 +589,8 @@ public class LineParser {
         //迭代循环的时候查询
         for (String string : _alia.split(SPLIT_AND)) {
             QueryTree qt = queryMap.get(string.toLowerCase());
-            if (Check.notEmpty(column)) {
+            //HeraJob-565 COALESCE(a2.include_fee_real,0)无法正确解析表名a2
+            if (Check.notEmpty(column) && qt != null) {
                 for (ColLine colLine : qt.getColLineList()) {
                     if (column.equalsIgnoreCase(colLine.getToNameParse())) {
                         Block bk = new Block();
@@ -783,31 +784,29 @@ public class LineParser {
         parseIteral(ast);
     }
 
-    public List<SQLResult> parse(String sqlAll) throws Exception {
+    public List<SQLResult> parse(String sqlAll, Context ctx) throws Exception {
         if (Check.isEmpty(sqlAll)) {
             return resultList;
         }
         startParseAll();
         //当前是第i个sql
         int i = 0;
+        String[] lines = sqlAll.split("\n");
+        StringBuilder sqlResult = new StringBuilder(lines.length);
+        for (String line : lines) {
+            if (!line.trim().startsWith("--")) {
+                sqlResult.append(line).append('\n');
+            }
+        }
+        sqlAll = sqlResult.toString();
         for (String sql : sqlAll.split("(?<!\\\\);")) {
             ParseDriver pd = new ParseDriver();
-            if (sql.contains("--")) {
-                String[] lines = sql.split("\n");
-                StringBuilder sqlResult = new StringBuilder(lines.length);
-                for (String line : lines) {
-                    if (!line.trim().startsWith("--")) {
-                        sqlResult.append(line).append('\n');
-                    }
-                }
-                sql = sqlResult.toString();
-            }
             String trim = sql.toLowerCase().trim();
             if (trim.startsWith("set") || trim.startsWith("add") || Check.isEmpty(trim)) {
                 continue;
             }
             try {
-                ASTNode ast = pd.parse(sql);
+                ASTNode ast = pd.parse(sql, ctx);
                 if ("local".equals(PropertyFileUtil.getProperty("environment"))) {
                     System.out.println(ast.toStringTree());
                 }
@@ -819,9 +818,10 @@ public class LineParser {
                     continue;
                 } else {
                     if (e.toString().contains("NullPointerException")) {
-                        System.out.println("******" + sqlAll);
+                        System.out.println("!!!!!!" + sqlAll);
                         continue;
                     } else {
+                        //八成语法写错了
                         System.out.println("&&&&&&" + sqlAll);
                         continue;
                     }
@@ -993,9 +993,10 @@ public class LineParser {
      */
     private void validateUnion(List<ColLine> list) {
         int size = list.size();
-        if (size % 2 == 1) {
-            throw new SQLParseException("union column number are different, size=" + size);
-        }
+        //TODO Why???
+//        if (size % 2 == 1) {
+//            throw new SQLParseException("union column number are different, size=" + size);
+//        }
         int colNum = size / 2;
         checkUnion(list, 0, colNum);
         checkUnion(list, colNum, size);

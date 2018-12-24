@@ -9,6 +9,8 @@ import com.dfire.products.dao.Neo4jDaoImpl;
 import com.dfire.products.hera.RenderHierarchyProperties;
 import com.dfire.products.parse.LineParser;
 import com.dfire.products.util.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.ql.Context;
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.internal.SQLConf;
@@ -37,6 +39,7 @@ public class SqlParserController {
     private Map<String, List<String>> tableColumnInfo;
     private Neo4jUtil neo4jUtil = new Neo4jUtil();
 
+    private Configuration conf = new Configuration();
 
     MagicSnowFlake msf = new MagicSnowFlake(1, 1);
 
@@ -103,7 +106,12 @@ public class SqlParserController {
         List<SQLResult> list = new ArrayList<>();
         LineParser lineParser = new LineParser();
         try {
-            list = lineParser.parse(RenderHierarchyProperties.render(sql));
+            conf.set("_hive.hdfs.session.path", "local");
+            conf.set("_hive.tmp_table_space", "local");
+            conf.set("_hive.local.session.path", "local");
+            conf.set("_tmp_space.db", "local");
+            Context context = new Context(conf);
+            list = lineParser.parse(RenderHierarchyProperties.render(sql), context);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -148,8 +156,14 @@ public class SqlParserController {
     @RequestMapping("/initGraph")
     public String initGraph(@RequestBody Integer parseNum) throws Exception {
         long startParser = System.currentTimeMillis();
+        conf.set("_hive.hdfs.session.path", "local");
+        conf.set("_hive.tmp_table_space", "local");
+        conf.set("_hive.local.session.path", "local");
+        conf.set("_tmp_space.db", "local");
+        Context context = new Context(conf);
         MysqlMetaCache mysqlMetaCache = new MysqlMetaCache();
-        Set<Long> problemJobList = new LinkedHashSet<>();
+        Set<Long> problemTableList = new LinkedHashSet<>();
+        Set<Long> problemColumnList = new LinkedHashSet<>();
         Map<String, Long> tableInfo = mysqlMetaCache.getTableInfo();
         Map<String, Long> columnInfo = mysqlMetaCache.getColumnInfo();
         LineParser lineParser = new LineParser();
@@ -170,12 +184,15 @@ public class SqlParserController {
                 for (HeraJobEntity heraJobEntity : heraJobList) {
                     System.out.println("HeraJob No:" + number.incrementAndGet());
                     //快速测试 跳过检测过的job
+//                    if (number.get() < 21) {
+//                        continue;
+//                    }
 //                    if (heraJobEntity.getId() <= 669) {
 //                        continue;
 //                    }
 //                lineParser.
 //                for (String sql : heraJobEntity.getScript().split("(?<!\\\\);")) {
-                    List<SQLResult> list = lineParser.parse(RenderHierarchyProperties.render(heraJobEntity.getScript()));
+                    List<SQLResult> list = lineParser.parse(RenderHierarchyProperties.render(heraJobEntity.getScript()), context);
                     AtomicInteger relationId = new AtomicInteger(0);
                     String baseSql = "insert into data_lineage.data_lineage_relation " +
                             "(`relation_id`,`column_id`,`table_id`,`from_table_id`,`from_column_id`,`condition`) values ";
@@ -201,19 +218,19 @@ public class SqlParserController {
                                     if (to.length == 2) {
                                         String outputDbName = to[0];
                                         String outputTableName = to[1];
-                                        Long outputColumnId = null;
-                                        Long outputTableId = null;
+                                        long outputColumnId = 1L;
+                                        long outputTableId = 1L;
                                         try {
                                             outputColumnId = columnInfo.get(outputDbTableName + "." + outputColumnName);
                                             outputTableId = tableInfo.get(outputDbTableName);
                                         } catch (Exception e) {
                                             System.out.println("Attention! No table or column found in mysql meta tables.\n" +
                                                     "output:" + outputDbTableName + "." + outputColumnName);
-                                            if (outputColumnId != null) {
-                                                problemJobList.add(heraJobEntity.getId());
+                                            if (outputColumnId != 1L) {
+                                                problemTableList.add(heraJobEntity.getId());
+                                            } else {
+                                                problemColumnList.add(heraJobEntity.getId());
                                             }
-                                            outputColumnId = msf.nextId();
-                                            outputTableId = msf.nextId();
                                         }
 
                                         //from_column_name db.table.column 如BBB.bbb.activity_id
@@ -226,28 +243,31 @@ public class SqlParserController {
                                                     String inputDbName = from[0];
                                                     String inputTableName = from[1];
                                                     String inputColumnName = from[2];
-                                                    Long inputColumnId = null;
-                                                    Long inputTableId = null;
+                                                    long inputColumnId = 1L;
+                                                    long inputTableId = 1L;
                                                     try {
                                                         inputColumnId = columnInfo.get(tmp);
                                                         inputTableId = tableInfo.get(inputDbName + "." + inputTableName);
                                                     } catch (Exception e) {
                                                         System.out.println("Attention! No table or column found in mysql meta tables.\n" +
                                                                 "input:" + tmp);
-                                                        if (inputColumnId != null) {
-                                                            problemJobList.add(heraJobEntity.getId());
+                                                        if (inputColumnId != 1L) {
+                                                            problemTableList.add(heraJobEntity.getId());
+                                                        } else {
+                                                            problemColumnList.add(heraJobEntity.getId());
                                                         }
-                                                        inputColumnId = msf.nextId();
-                                                        inputTableId = msf.nextId();
                                                     }
                                                     //condition 将'\''转化为~存，不然sql报错
                                                     String condition = colLine.getConditionSet().toString().replace('\'', '~');
                                                     //++relationId
                                                     relationId.getAndIncrement();
                                                     //insert into data_lineage.data_lineage_relation
-                                                    appendSql += "('" + msf.nextId() + "','" + outputColumnId + "','"
-                                                            + outputTableId + "','" + inputTableId + "','"
-                                                            + inputColumnId + "','" + condition + "')";
+                                                    appendSql += "('" + msf.nextId() + "','"
+                                                            + outputColumnId + "','"
+                                                            + outputTableId + "','"
+                                                            + inputTableId + "','"
+                                                            + inputColumnId + "','"
+                                                            + condition + "')";
                                                     if (Integer.parseInt(relationId.toString()) % 10 == 0) {
                                                         dbUtil.doInsert(baseSql + appendSql);
                                                         appendSql = "";
@@ -327,8 +347,10 @@ public class SqlParserController {
         }
         dbUtil.close();
         neo4jUtil.close();
-        System.out.println("ProblemJobList size:" + problemJobList.size());
-        System.out.println("ProblemJobList:" + problemJobList);
+        System.out.println("problemColumnList size:" + problemColumnList.size());
+        System.out.println("problemColumnList:" + problemColumnList);
+        System.out.println("ProblemTableList size:" + problemTableList.size());
+        System.out.println("ProblemTableList:" + problemTableList);
         System.out.println("Parser time used:" + (System.currentTimeMillis() - startParser) + "ms");
         return "Graph and relations have been successfully inited!";
     }
