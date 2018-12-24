@@ -306,6 +306,7 @@ public class LineParser {
                     //1、过滤条件的处理join类
                     if (joinOn != null && joinOn.getTokenStartIndex() == ast.getTokenStartIndex()
                             && joinOn.getTokenStopIndex() == ast.getTokenStopIndex()
+                            && ast.getChildren() != null
                             && ast.getChildren().size() == 3) {
                         ASTNode astCon = (ASTNode) ast.getChild(2);
                         conditions.add(ast.getText().substring(4) + ":" + getBlockIteral(astCon).getCondition());
@@ -731,7 +732,8 @@ public class LineParser {
     }
 
     private void mergeUnionCols() {
-        validateUnion(cols);
+        //TODO why validateUnion?
+//        validateUnion(cols);
         int size = cols.size();
         int colNum = size / 2;
         List<ColLine> list = new ArrayList<>(colNum);

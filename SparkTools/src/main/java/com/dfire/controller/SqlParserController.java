@@ -182,7 +182,7 @@ public class SqlParserController {
                 System.out.println("HeraJobToTalNum:" + heraJobList.size());
                 AtomicInteger number = new AtomicInteger(0);
                 for (HeraJobEntity heraJobEntity : heraJobList) {
-                    System.out.println("HeraJob No:" + number.incrementAndGet());
+                    System.out.println("HeraJob No:" + number.incrementAndGet() + ";RealJobID:" + heraJobEntity.getId());
                     //快速测试 跳过检测过的job
 //                    if (number.get() < 21) {
 //                        continue;
@@ -326,7 +326,10 @@ public class SqlParserController {
                                             }
                                         }
                                     } else {
-                                        System.out.println("Error outputDbTableName:" + outputDbTableName);
+                                        if (!outputDbTableName.contains("TOK_TMP_FILE")) {
+                                            problemTableList.add(heraJobEntity.getId());
+                                            System.out.println("Error outputDbTableName:" + outputDbTableName);
+                                        }
                                     }
                                 }
                             }
