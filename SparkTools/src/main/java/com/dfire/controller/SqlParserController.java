@@ -102,6 +102,14 @@ public class SqlParserController {
                 searchNeo4jEntity.getLimit());
     }
 
+    /**
+     * 提供无用表集合
+     */
+    @RequestMapping("/getUselessTable")
+    public Set<String> getUselessTable() {
+        return uselessTable.keySet();
+    }
+
     @RequestMapping("/hive_parser")
     public List<SQLResult> hiveParser(@RequestBody String sql) {
         List<SQLResult> list = new ArrayList<>();
