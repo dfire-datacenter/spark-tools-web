@@ -65,25 +65,6 @@
             <version>1.1.12.RELEASE</version>
         </dependency>
 
-
-        <!--<dependency>-->
-        <!--<groupId>org.springframework.boot</groupId>-->
-        <!--<artifactId>spring-boot-starter-tomcat</artifactId>-->
-        <!--<version>${spring-boot.version}</version>-->
-        <!--</dependency>-->
-
-        <!--<dependency>-->
-        <!--<groupId>org.apache.tomcat.embed</groupId>-->
-        <!--<artifactId>tomcat-embed-jasper</artifactId>-->
-        <!--<version>8.0.36</version>-->
-        <!--</dependency>-->
-
-        <!--<dependency>-->
-        <!--<groupId>org.glassfish.web</groupId>-->
-        <!--<artifactId>el-impl</artifactId>-->
-        <!--<version>2.2</version>-->
-        <!--</dependency>-->
-
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
@@ -99,18 +80,6 @@
             <artifactId>javax.el</artifactId>
             <version>2.2.4</version>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.apache.tomcat</groupId>-->
-        <!--<artifactId>tomcat-el-api</artifactId>-->
-        <!--<version>8.5.29</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.tomcat</groupId>-->
-        <!--<artifactId>tomcat-jasper-el</artifactId>-->
-        <!--<version>8.5.29</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
@@ -122,10 +91,6 @@
             <artifactId>tomcat-juli</artifactId>
             <version>7.0.59</version>
         </dependency>
-
-
-        <!-- http://k.2dfire.net/pages/viewpage.action?pageId=387121269 -->
-        <!-- http://git.2dfire-inc.com/middleware/common-validator/tree/master -->
         <dependency>
             <groupId>com.dfire.middleware</groupId>
             <artifactId>common-validator</artifactId>
