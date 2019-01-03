@@ -200,8 +200,6 @@ public class SqlParserController {
 //                    if (heraJobEntity.getId() <= 669) {
 //                        continue;
 //                    }
-//                lineParser.
-//                for (String sql : heraJobEntity.getScript().split("(?<!\\\\);")) {
                     List<SQLResult> list = lineParser.parse(RenderHierarchyProperties.render(heraJobEntity.getScript()), context);
                     AtomicInteger relationId = new AtomicInteger(0);
                     String baseSql = "insert into data_lineage.data_lineage_relation " +
@@ -288,7 +286,6 @@ public class SqlParserController {
                                                     }
 
                                                     //处理Neo4j逻辑
-//                                                    long startTable = System.currentTimeMillis();
                                                     //neo4j处理table之间血缘
                                                     if (!neo4jUtil.neo4jCheckTableNodeExistByCache(inputDbName, inputTableName)) {
                                                         if (!neo4jUtil.neo4jCreateTableNode(inputDbName, inputTableName)) {
@@ -307,10 +304,8 @@ public class SqlParserController {
                                                             throw new Exception("Create neo4j table relation error!");
                                                         }
                                                     }
-//                                            System.out.println("deal neo4j table :" + (System.currentTimeMillis() - startTable) + "ms");
 
                                                     //neo4j处理columns之间血缘
-//                                                    long startColumn = System.currentTimeMillis();
                                                     if (!neo4jUtil.neo4jCheckColumnNodeExistByCache(inputDbName, inputTableName, inputColumnName)) {
                                                         if (!neo4jUtil.neo4jCreateColumnNode(inputDbName, inputTableName, inputColumnName)) {
                                                             throw new Exception("Create neo4j column node error!");
@@ -330,7 +325,6 @@ public class SqlParserController {
                                                             throw new Exception("Create neo4j column relation error!");
                                                         }
                                                     }
-//                                            System.out.println("deal neo4j column :" + (System.currentTimeMillis() - startColumn) + "ms");
 
                                                     //TODO neo4j处理jobs之间的血缘
 
@@ -351,12 +345,7 @@ public class SqlParserController {
                                 appendSql = "";
                             }
                         }
-
-//                    System.out.println("InputTables:" + sqlResult.getInputTables().toString());
-//                    System.out.println("OutputTables:" + sqlResult.getOutputTables().toString());
-//                    System.out.println("ColLineList:" + sqlResult.getColLineList().toString());
                     }
-//                }
                 }
             }
         }
